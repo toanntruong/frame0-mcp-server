@@ -27,7 +27,8 @@
   },
   "homepage": "https://github.com/niklauslee/frame0-mcp-server#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.8.0"
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
