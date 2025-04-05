@@ -1,4 +1,4 @@
-import { McpServer, ResourceTemplate, } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import fetch from "node-fetch";
@@ -8,10 +8,6 @@ const server = new McpServer({
     name: "frame0-mcp-server",
     version: "1.0.0",
 });
-// Add an addition tool
-// server.tool("add", { a: z.number(), b: z.number() }, async ({ a, b }) => ({
-//   content: [{ type: "text", text: String(a + b) }],
-// }));
 server.tool("create_frame", "Create a frame", {
     kind: z
         .enum([
@@ -26,13 +22,15 @@ server.tool("create_frame", "Create a frame", {
         .describe("Frame type"),
     left: z.number().describe("X coordinate"),
     top: z.number().describe("Y coordinate"),
-}, async ({ kind, left, top }) => {
+    width: z.number().describe("Width of the frame"),
+    height: z.number().describe("Height of the frame"),
+}, async ({ kind, left, top, width, height }) => {
     const res = await fetch(`${URL}/create_frame`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ kind, left, top }),
+        body: JSON.stringify({ kind, left, top, width, height }),
     });
     if (!res.ok) {
         throw new Error("Failed to create rectangle");
@@ -106,15 +104,46 @@ server.tool("create_text", "Create a text", {
         ],
     };
 });
+// Define design screen prompt
+server.prompt("design_screen", "Best practices for design a screen with Frame0", { screen: z.string() }, ({ screen }) => {
+    return {
+        messages: [
+            {
+                role: "assistant",
+                content: {
+                    type: "text",
+                    text: `When design a screen with Frame0, follow these best practices:
+
+1. Create a frame:
+   - First use create_frame()
+   - Set the frame type (e.g., Phone, Tablet, Desktop)
+   - Set the position (left, top) of the frame
+   - Remember the resulting frame's properties (id, position, width, height) for future reference
+
+2. Shape Creation:
+   - Use create_rectangle() for containers and input fields
+   - Use create_text() for labels, buttons text, and links
+   - Set the position (left, top) and size (width, height) of each shape based on the frame
+`,
+                },
+            },
+        ],
+        description: "Best practices for design wireframe for a screen with Frame0",
+    };
+});
 // Add a dynamic greeting resource
-server.resource("greeting", new ResourceTemplate("greeting://{name}", { list: undefined }), async (uri, { name }) => ({
-    contents: [
-        {
-            uri: uri.href,
-            text: `Hello, ${name}!`,
-        },
-    ],
-}));
+// server.resource(
+//   "greeting",
+//   new ResourceTemplate("greeting://{name}", { list: undefined }),
+//   async (uri, { name }) => ({
+//     contents: [
+//       {
+//         uri: uri.href,
+//         text: `Hello, ${name}!`,
+//       },
+//     ],
+//   })
+// );
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
