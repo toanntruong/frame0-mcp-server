@@ -28,7 +28,7 @@ const server = new McpServer({
 
 server.tool(
   "create_frame",
-  "Create a frame",
+  "Create a frame in Frame0",
   {
     kind: z
       .enum([
@@ -41,8 +41,8 @@ server.tool(
         "Custom Frame",
       ])
       .describe("Frame type"),
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+    left: z.number().describe("left coordinate of the frame"),
+    top: z.number().describe("top coordinate of the frame"),
     width: z.number().describe("Width of the frame"),
     height: z.number().describe("Height of the frame"),
   },
@@ -67,29 +67,24 @@ server.tool(
 
 server.tool(
   "create_rectangle",
-  "Create a rectangle",
+  "Create a rectangle in Frame0",
   {
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+    left: z.number().describe("left coordinate of the rectangle"),
+    top: z.number().describe("top coordinate of the rectangle"),
     width: z.number().describe("Width of the rectangle"),
     height: z.number().describe("Height of the rectangle"),
     cornerRadius: z
       .number()
       .optional()
       .describe("Corner radius of the rectangle"),
-    text: z
-      .string()
-      .optional()
-      .describe("Text to display inside the rectangle"),
   },
-  async ({ left, top, width, height, cornerRadius, text }) => {
+  async ({ left, top, width, height, cornerRadius }) => {
     const data = await requestToFrame0("/create_rectangle", {
       left,
       top,
       width,
       height,
       cornerRadius,
-      text,
     });
     return {
       content: [
@@ -104,17 +99,24 @@ server.tool(
 
 server.tool(
   "create_text",
-  "Create a text",
+  "Create a text in Frame0",
   {
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+    left: z.number().describe("left coordinate of the text"),
+    top: z.number().describe("top coordinate of the text"),
     text: z.string().describe("Text to display"),
+    fontColor: z
+      .string()
+      .optional()
+      .describe(
+        "A palette color name for Font color of the text. Available colors are: $background, $gray3, $gray6, $gray9, $foreground."
+      ),
   },
-  async ({ left, top, text }) => {
+  async ({ left, top, text, fontColor }) => {
     const data = await requestToFrame0("/create_text", {
       left,
       top,
       text,
+      fontColor,
     });
     return {
       content: [

@@ -3,12 +3,26 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import fetch from "node-fetch";
 const URL = "http://localhost:3000";
+async function requestToFrame0(slug, params) {
+    const res = await fetch(`${URL}${slug}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+        throw new Error("Failed to create rectangle");
+    }
+    const data = await res.json();
+    return data;
+}
 // Create an MCP server
 const server = new McpServer({
     name: "frame0-mcp-server",
     version: "1.0.0",
 });
-server.tool("create_frame", "Create a frame", {
+server.tool("create_frame", "Create a frame in Frame0", {
     kind: z
         .enum([
         "Phone",
@@ -20,22 +34,18 @@ server.tool("create_frame", "Create a frame", {
         "Custom Frame",
     ])
         .describe("Frame type"),
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+    left: z.number().describe("left coordinate of the frame"),
+    top: z.number().describe("top coordinate of the frame"),
     width: z.number().describe("Width of the frame"),
     height: z.number().describe("Height of the frame"),
 }, async ({ kind, left, top, width, height }) => {
-    const res = await fetch(`${URL}/create_frame`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ kind, left, top, width, height }),
+    const data = await requestToFrame0("/create_frame", {
+        kind,
+        left,
+        top,
+        width,
+        height,
     });
-    if (!res.ok) {
-        throw new Error("Failed to create rectangle");
-    }
-    const data = await res.json();
     return {
         content: [
             {
@@ -45,31 +55,23 @@ server.tool("create_frame", "Create a frame", {
         ],
     };
 });
-server.tool("create_rectangle", "Create a rectangle", {
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+server.tool("create_rectangle", "Create a rectangle in Frame0", {
+    left: z.number().describe("left coordinate of the rectangle"),
+    top: z.number().describe("top coordinate of the rectangle"),
     width: z.number().describe("Width of the rectangle"),
     height: z.number().describe("Height of the rectangle"),
     cornerRadius: z
         .number()
         .optional()
         .describe("Corner radius of the rectangle"),
-    text: z
-        .string()
-        .optional()
-        .describe("Text to display inside the rectangle"),
-}, async ({ left, top, width, height, cornerRadius, text }) => {
-    const res = await fetch(`${URL}/create_rectangle`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ left, top, width, height, cornerRadius, text }),
+}, async ({ left, top, width, height, cornerRadius }) => {
+    const data = await requestToFrame0("/create_rectangle", {
+        left,
+        top,
+        width,
+        height,
+        cornerRadius,
     });
-    if (!res.ok) {
-        throw new Error("Failed to create rectangle");
-    }
-    const data = await res.json();
     return {
         content: [
             {
@@ -79,22 +81,21 @@ server.tool("create_rectangle", "Create a rectangle", {
         ],
     };
 });
-server.tool("create_text", "Create a text", {
-    left: z.number().describe("X coordinate"),
-    top: z.number().describe("Y coordinate"),
+server.tool("create_text", "Create a text in Frame0", {
+    left: z.number().describe("left coordinate of the text"),
+    top: z.number().describe("top coordinate of the text"),
     text: z.string().describe("Text to display"),
-}, async ({ left, top, text }) => {
-    const res = await fetch(`${URL}/create_text`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json", // JSON 형식으로 보낸다는 걸 명시
-        },
-        body: JSON.stringify({ left, top, text }), // JSON 형식으로 변환하여 전송
+    fontColor: z
+        .string()
+        .optional()
+        .describe("A palette color name for Font color of the text. Available colors are: $background, $gray3, $gray6, $gray9, $foreground."),
+}, async ({ left, top, text, fontColor }) => {
+    const data = await requestToFrame0("/create_text", {
+        left,
+        top,
+        text,
+        fontColor,
     });
-    if (!res.ok) {
-        throw new Error("Failed to create text");
-    }
-    const data = await res.json();
     return {
         content: [
             {
