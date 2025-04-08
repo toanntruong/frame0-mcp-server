@@ -1,1 +1,67 @@
-# frame0-mcp-server
+# Frame0 MCP Server
+
+## API
+
+### Tools
+
+- **create_frame**
+  - `type` (Phone | Tablet | Desktop | Browser | Watch | TV | Custom)
+  - `left`, `top`, `width`, `height`
+  - `fillColor?`
+  - returns created shape info
+- **create_rectangle**
+  - `parentId`
+  - `name`
+  - `left`, `top`, `width`, `height`
+  - `fillColor`, `strokeColor`
+  - `corners`
+  - returns created shape info
+- **create_ellipse**
+  - `parentId`
+  - `name`
+  - `left`, `top`, `width`, `height`
+  - `fillColor`, `strokeColor`
+  - returns created shape info
+- **create_text**
+  - `parentId`
+  - `name`
+  - `left`, `top`, `width?` (providing width means wordWrap)
+  - `fontColor`, `fontSize`, `text`, `textAlign`
+  - returns created shape info
+- **create_line**
+  - `parentId`
+  - `name`
+  - `points`
+  - `fillColor`, `strokeColor`
+  - returns created shape info
+- **update_shape**
+  - `id`
+  - all available props
+  - returns update shape info
+- **move_shape**
+  - `id`
+  - `dx`, `dy`
+  - returns update shape info
+- **duplicate_shape**
+  - `id`
+  - returns created shape info
+- **send_to_back**
+  - `id`
+- **bring_to_front**
+  - `id`
+- **get_current_page**
+  - return the current page info
+- **set_current_page**
+  - id
+- **add_page**
+  - name
+  - return the created page info
+- **delete_page**
+  - id
+  - returns ok/error
+- **export_page_as_image**
+  - id
+  - format (png, jpeg, svg, webp)
+  - return the image data
+- **get_document**
+  - returns document info (name, filename, pages)

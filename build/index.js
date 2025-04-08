@@ -8,43 +8,40 @@ const AVAILABLE_COLORS_PROMPT = `The available colors are as follows: $backgroun
 <level> is a value between 1 and 12. (1 is the lightest, and 12 is the darkest)`;
 const shapeSchema = {
     name: z.string().optional().describe("Name of the shape."),
-    parentId: z
-        .string()
-        .optional()
-        .describe("Parent ID of the shape. Typically the frame ID"),
-    left: z.number().describe("left coordinate of the shape"),
-    top: z.number().describe("top coordinate of the shape"),
-    width: z.number().describe("Width of the shape"),
-    height: z.number().describe("Height of the shape"),
+    // parentId: z
+    //   .string()
+    //   .optional()
+    //   .describe("Parent ID of the shape. Typically the frame ID"),
+    left: z.number().optional().describe("left coordinate of the shape"),
+    top: z.number().optional().describe("top coordinate of the shape"),
+    width: z.number().optional().describe("Width of the shape"),
+    height: z.number().optional().describe("Height of the shape"),
     fillColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Fill color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+        .describe(`Fill color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
     strokeColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Stroke color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+        .describe(`Stroke color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
     fontColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Font color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z
-        .number()
-        .optional()
-        .describe("Font size of the text. Base font size is 16px."),
+        .describe(`Font color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+    fontSize: z.number().optional().describe("Font size of the text."),
     corners: z
         .array(z.number())
         .optional()
         .describe("Corner radius of the shape. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."),
-    text: z.string().optional().describe("Text inside the shape"),
+    text: z.string().optional().describe("Text content of the shape"),
     horzAlign: z
         .enum(["left", "center", "right"])
         .optional()
-        .describe("Horizontal alignment of the text inside the shape. Default is 'center'."),
+        .describe("Horizontal alignment of the text inside the shape."),
     vertAlign: z
         .enum(["top", "middle", "bottom"])
         .optional()
-        .describe("Vertical alignment of the text inside the shape. Default is 'middle'."),
+        .describe("Vertical alignment of the text inside the shape."),
 };
 async function requestToFrame0(slug, params = {}) {
     const res = await fetch(`${URL}${slug}`, {
@@ -67,20 +64,26 @@ const server = new McpServer({
 });
 server.tool("create_frame", `Create a frame in Frame0.
 
-  Typical size of frames:
-  - Phone: 320 x 690
-  - Tablet: 520 x 790
-  - Desktop: 800 x 600
-  - Browser: 800 x 600
-  - Watch: 198 x 242
-  - TV: 960 x 570.
+1. Frame Types and Sizes
+Typical size of frames:
+- Phone: 320 x 690
+- Tablet: 520 x 790
+- Desktop: 800 x 600
+- Browser: 800 x 600
+- Watch: 198 x 242
+- TV: 960 x 570
 
-  When you create a screen, you need to create a frame first.
-  The frame is the parent of all UI elements in the screen.
+2. Frame Structure
+When you create a screen, you need to create a frame first.
+The frame is the parent of all UI elements in the screen.
 
-  The coordinate system of the frame and the shapes inside it are the same. Just because they are inside doesn't mean they start at [0,0].
+3. Coordinate System
+The frame and the shapes inside it use the same coordinate system.
+For example, if the frame is located at [100, 100] and its size is 320x690,
+then the position and size of all shapes inside the frame must not exceed the 
+area from [100, 100] to [420, 790].
 `, {
-    name: z
+    frameType: z
         .enum([
         "Phone",
         "Tablet",
@@ -98,52 +101,15 @@ server.tool("create_frame", `Create a frame in Frame0.
     fillColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Fill color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
-}, async ({ name, left, top, width, height }) => {
+        .describe(`Fill color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
+}, async ({ frameType, left, top, width, height, fillColor }) => {
     const data = await requestToFrame0("/create_shape_from_library", {
-        query: `${name}&@Frame`,
+        query: `${frameType}&@Frame`,
         left,
         top,
         width,
         height,
-    });
-    return {
-        content: [
-            {
-                type: "text",
-                text: JSON.stringify(data),
-            },
-        ],
-    };
-});
-server.tool("create_text", `Create a text in Frame0.
-  
-  Text can be used to create labels, links, descriptions, paragraph, headings, etc.`, {
-    name: z.string().optional().describe("Name of the text"),
-    parentId: z
-        .string()
-        .optional()
-        .describe("Parent ID of the text. Typically the frame ID"),
-    left: z.number().describe("left coordinate of the text"),
-    top: z.number().describe("top coordinate of the text"),
-    text: z.string().describe("Text to display"),
-    fontColor: z
-        .string()
-        .optional()
-        .describe(`A palette color name for Font color of the text. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z
-        .number()
-        .optional()
-        .describe("Font size of the text. Base font size is 16px."),
-}, async ({ name, parentId, left, top, text, fontColor }) => {
-    const data = await requestToFrame0("/create_shape", {
-        type: "Text",
-        parentId,
-        name,
-        left,
-        top,
-        text,
-        fontColor,
+        fillColor,
     });
     return {
         content: [
@@ -155,11 +121,11 @@ server.tool("create_text", `Create a text in Frame0.
     };
 });
 server.tool("create_rectangle", `Create a rectangle in Frame0.`, {
-    name: z.string().optional().describe("Name of the rectangle."),
+    name: z.string().optional().describe("Optional name of the rectangle."),
     parentId: z
         .string()
         .optional()
-        .describe("Parent ID of the rectangle. Typically the frame ID"),
+        .describe("Parent ID of the rectangle. Typically the frame ID. If not provided, the shape will be created in the page."),
     left: z.number().describe("left coordinate of the rectangle"),
     top: z.number().describe("top coordinate of the rectangle"),
     width: z.number().describe("Width of the rectangle"),
@@ -167,33 +133,16 @@ server.tool("create_rectangle", `Create a rectangle in Frame0.`, {
     fillColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Fill color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
+        .describe(`Fill color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
     strokeColor: z
         .string()
         .optional()
-        .describe(`A palette color name for Stroke color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
-    fontColor: z
-        .string()
-        .optional()
-        .describe(`A palette color name for Font color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z
-        .number()
-        .optional()
-        .describe("Font size of the text. Base font size is 16px."),
+        .describe(`Stroke color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
     corners: z
         .array(z.number())
         .optional()
         .describe("Corner radius of the rectangle. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."),
-    text: z.string().optional().describe("Text inside the rectangle"),
-    horzAlign: z
-        .enum(["left", "center", "right"])
-        .optional()
-        .describe("Horizontal alignment of the text inside the rectangle. Default is 'center'."),
-    vertAlign: z
-        .enum(["top", "middle", "bottom"])
-        .optional()
-        .describe("Vertical alignment of the text inside the rectangle. Default is 'middle'."),
-}, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, fontColor, fontSize, text, horzAlign, vertAlign, corners, }) => {
+}, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, corners, }) => {
     const data = await requestToFrame0("/create_shape", {
         type: "Rectangle",
         name,
@@ -204,12 +153,133 @@ server.tool("create_rectangle", `Create a rectangle in Frame0.`, {
         height,
         fillColor,
         strokeColor,
+        corners,
+    });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
+server.tool("create_ellipse", `Create an ellipse in Frame0.`, {
+    name: z.string().optional().describe("Optional name of the ellipse."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("Parent ID of the ellipse. Typically the frame ID. If not provided, the shape will be created in the page."),
+    left: z.number().describe("left coordinate of the ellipse"),
+    top: z.number().describe("top coordinate of the ellipse"),
+    width: z.number().describe("Width of the ellipse"),
+    height: z.number().describe("Height of the ellipse"),
+    fillColor: z
+        .string()
+        .optional()
+        .describe(`Fill color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
+    strokeColor: z
+        .string()
+        .optional()
+        .describe(`Stroke color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
+}, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, }) => {
+    const data = await requestToFrame0("/create_shape", {
+        type: "Ellipse",
+        name,
+        parentId,
+        left,
+        top,
+        width,
+        height,
+        fillColor,
+        strokeColor,
+    });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
+server.tool("create_text", `Create a text in Frame0.  
+
+Text can be used to create labels, links, descriptions, paragraph, headings, etc.`, {
+    name: z.string().optional().describe("Optional name of the text"),
+    parentId: z
+        .string()
+        .optional()
+        .describe("Parent ID of the text. Typically the frame ID. If not provided, the shape will be created in the page."),
+    left: z.number().describe("left coordinate of the text"),
+    top: z.number().describe("top coordinate of the text"),
+    width: z
+        .number()
+        .optional()
+        .describe("Optional width of the text. If you provide width, the text will be wrapped to fit the width."),
+    text: z
+        .string()
+        .describe("Text to display. Use newline character (0x0A) instead of '\\n' for new line."),
+    textAlignment: z
+        .enum(["left", "center", "right"])
+        .optional()
+        .default("left")
+        .describe("Text alignment of the text."),
+    fontColor: z
+        .string()
+        .optional()
+        .describe(`Font color of the text. ${AVAILABLE_COLORS_PROMPT}`),
+    fontSize: z.number().optional().describe("Font size of the text."),
+}, async ({ name, parentId, left, top, width, text, textAlignment, fontColor, fontSize, }) => {
+    const data = await requestToFrame0("/create_shape", {
+        type: "Text",
+        parentId,
+        name,
+        left,
+        width,
+        top,
+        text,
+        horzAlign: textAlignment,
         fontColor,
         fontSize,
-        text,
-        horzAlign,
-        vertAlign,
-        corners,
+        wordWrap: typeof width === "number" ? true : false,
+    });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
+server.tool("create_line", `Create a multi-point line in Frame0.
+  A line can be used to create a line, arrow, a polyline, or a polygon.
+  If first point and last point are the same, it will be a polygon.`, {
+    name: z.string().optional().describe("Optional name of the line."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("Parent ID of the line. Typically the frame ID. If not provided, the shape will be created in the page."),
+    points: z
+        .array(z.tuple([z.number(), z.number()]))
+        .describe("Array of points. At least 2 points are required."),
+    fillColor: z
+        .string()
+        .optional()
+        .describe(`Fill color of the line. ${AVAILABLE_COLORS_PROMPT}`),
+    strokeColor: z
+        .string()
+        .optional()
+        .describe(`Stroke color of the line. ${AVAILABLE_COLORS_PROMPT}`),
+}, async ({ name, parentId, points, fillColor, strokeColor }) => {
+    const data = await requestToFrame0("/create_shape", {
+        type: "Line",
+        name,
+        path: points,
+        parentId,
+        fillColor,
+        strokeColor,
     });
     return {
         content: [
