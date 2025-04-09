@@ -3,7 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import fetch from "node-fetch";
 const URL = "http://localhost:3000";
-const AVAILABLE_COLORS_PROMPT = `The available colors are as follows: $background, $foreground, and the format $<color><level>.  
+const AVAILABLE_COLORS_PROMPT = `The available colors are as follows:
+$background, $foreground, $transparent, and the format $<color><level>.  
 <color> is one of the following: gray, mauve, slate, sage, olive, sand, tomato, red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue, cyan, teal, jade, green, grass, bronze, gold, brown, orange, amber, yellow, lime, mint, sky.  
 <level> is a value between 1 and 12. (1 is the lightest, and 12 is the darkest)`;
 const shapeSchema = {
@@ -74,10 +75,14 @@ Typical size of frames:
 - TV: 960 x 570
 
 2. Frame Structure
-When you create a screen, you need to create a frame first.
-The frame is the parent of all UI elements in the screen.
+- When you create a screen, you need to create a frame first.
+- The frame is the parent of all UI elements in the screen.
 
-3. Coordinate System
+3. UI elements in the frame
+- Find appropriate UI elements first. If there is no suitable UI element, 
+create it using a rectangle, ellipse, text, line, or icon. 
+
+4. Coordinate System
 The frame and the shapes inside it use the same coordinate system.
 For example, if the frame is located at [100, 100] and its size is 320x690,
 then the position and size of all shapes inside the frame must not exceed the 
@@ -110,6 +115,57 @@ area from [100, 100] to [420, 790].
         width,
         height,
         fillColor,
+    });
+    await requestToFrame0("/execute_command", {
+        command: "view:fit-to-screen",
+    });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
+server.tool("create_element", `Create an UI element in Frame0.
+  
+Create a UI element as a priority, and if there is no suitable UI element,
+create it using a rectangle, ellipse, text, line, or icon.    
+  `, {
+    elementType: z
+        .enum([
+        "Panel",
+        "Input",
+        "Select",
+        "Combobox",
+        "Radio",
+        "Checkbox",
+        "Switch",
+        "Text Area",
+        "Button",
+        "Button (primary)",
+        "Button (secondary)",
+    ])
+        .describe("Type of the UI element"),
+    parentId: z
+        .string()
+        .optional()
+        .describe("Parent ID of the UI element. Typically the frame ID. If not provided, the shape will be created in the page."),
+    left: z.number().describe("left coordinate of the UI element"),
+    top: z.number().describe("top coordinate of the UI element"),
+    width: z.number().optional().describe("Width of the UI element"),
+    height: z.number().optional().describe("Height of the UI element"),
+    text: z.string().optional().describe("Text content of the UI element"),
+}, async ({ elementType, parentId, left, top, width, height, text }) => {
+    const data = await requestToFrame0("/create_shape_from_library", {
+        query: `${elementType}`,
+        parentId,
+        left,
+        top,
+        width,
+        height,
+        text,
     });
     return {
         content: [
@@ -205,7 +261,8 @@ server.tool("create_ellipse", `Create an ellipse in Frame0.`, {
 });
 server.tool("create_text", `Create a text in Frame0.  
 
-Text can be used to create labels, links, descriptions, paragraph, headings, etc.`, {
+Text can be used to create labels, links, descriptions, paragraph, headings, etc.
+Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.`, {
     name: z.string().optional().describe("Optional name of the text"),
     parentId: z
         .string()
@@ -290,7 +347,13 @@ server.tool("create_line", `Create a multi-point line in Frame0.
         ],
     };
 });
-server.tool("create_icon", `Create an icon in Frame0.`, {
+server.tool("create_icon", `Create an icon in Frame0.
+
+Typical size of icons:
+- Medium: 24 x 24
+- Small: 16 x 16
+- Large: 32 x 32
+`, {
     name: z.string().describe("Name of the icon."),
     parentId: z
         .string()

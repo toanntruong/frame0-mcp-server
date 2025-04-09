@@ -9,6 +9,12 @@
   - `left`, `top`, `width`, `height`
   - `fillColor?`
   - returns created shape info
+- **create_element**
+  - `type` (Panel | Input | Select | Combobox | Radio | Checkbox | Switch | TextArea | Video | Image | Button | Button (secondary) | Button (primary) | ProgressBar | Avatar | Heading 1 | Heading 2 | Heading 3 | Label | Link)
+  - `parentId`
+  - `name`
+  - `left`, `top`, `width`?, `height`?
+  - `text`
 - **create_rectangle**
   - `parentId`
   - `name`
