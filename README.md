@@ -5,7 +5,7 @@
 ### Tools
 
 - **create_frame**
-  - `type` (Phone | Tablet | Desktop | Browser | Watch | TV | Custom)
+  - `frameType` (Phone | Tablet | Desktop | Browser | Watch | TV | Custom)
   - `left`, `top`, `width`, `height`
   - `fillColor?`
   - returns created shape info
@@ -34,6 +34,13 @@
   - `points`
   - `fillColor`, `strokeColor`
   - returns created shape info
+- **create_icon**
+  - `parentId`
+  - `name`
+  - `left`, `top`, `width`, `height`
+  - `strokeColor`
+- **get_available_icons**
+  - returns a list of available icon names
 - **update_shape**
   - `id`
   - all available props

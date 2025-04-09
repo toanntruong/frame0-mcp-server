@@ -290,11 +290,55 @@ server.tool("create_line", `Create a multi-point line in Frame0.
         ],
     };
 });
+server.tool("create_icon", `Create an icon in Frame0.`, {
+    name: z.string().describe("Name of the icon."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("Parent ID of the icon. Typically the frame ID. If not provided, the shape will be created in the page."),
+    left: z.number().describe("left coordinate of the icon"),
+    top: z.number().describe("top coordinate of the icon"),
+    width: z.number().describe("Width of the icon"),
+    height: z.number().describe("Height of the icon"),
+    strokeColor: z
+        .string()
+        .optional()
+        .describe(`Stroke color of the icon. ${AVAILABLE_COLORS_PROMPT}`),
+}, async ({ name, parentId, left, top, width, height, strokeColor }) => {
+    const data = await requestToFrame0("/create_icon", {
+        name,
+        parentId,
+        left,
+        top,
+        width,
+        height,
+        strokeColor,
+    });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
 server.tool("update_shape", `Update a shape in Frame0.`, { id: z.string(), ...shapeSchema }, async ({ id, ...others }) => {
     const data = await requestToFrame0("/update_shape", {
         id,
         ...others,
     });
+    return {
+        content: [
+            {
+                type: "text",
+                text: JSON.stringify(data),
+            },
+        ],
+    };
+});
+server.tool("get_available_icons", `Get available icons in Frame0.`, {}, async ({}) => {
+    const data = await requestToFrame0("/get_available_icons", {});
     return {
         content: [
             {
