@@ -484,17 +484,17 @@ Typical size of icons:
 server.tool(
   "update_shape",
   `Update properties of a shape in Frame0.`,
-  { id: z.string(), ...shapeSchema },
-  async ({ id, ...others }) => {
+  { shapeId: z.string(), ...shapeSchema },
+  async ({ shapeId, ...others }) => {
     try {
-      const shapeId = await executeCommand("shape:update-shape", {
-        shapeId: id,
+      const updatedId = await executeCommand("shape:update-shape", {
+        shapeId,
         shapeProps: {
           ...others,
         },
       });
       const data = await executeCommand("shape:get-shape", {
-        shapeId,
+        shapeId: updatedId,
       });
       return textResult("Update shape: " + JSON.stringify(filterShape(data)));
     } catch (error) {

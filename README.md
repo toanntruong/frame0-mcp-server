@@ -51,6 +51,8 @@
   - `id`
   - all available props
   - returns update shape info
+- **delete_shape**
+  - `id`
 - **move_shape**
   - `id`
   - `dx`, `dy`
