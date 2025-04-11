@@ -6,18 +6,23 @@ const AVAILABLE_COLORS_PROMPT = `The available colors are as follows:
 $background, $foreground, $transparent, and the format $<color><level>.  
 <color> is one of the following: gray, mauve, slate, sage, olive, sand, tomato, red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue, cyan, teal, jade, green, grass, bronze, gold, brown, orange, amber, yellow, lime, mint, sky.  
 <level> is a value between 1 and 12. (1 is the lightest, and 12 is the darkest)`;
+const NAME_DESC = `The name of the shape.`;
+const LEFT_DESC = `The left coordinate of the shape in absolute coordinate system even inside the parent area.`;
+const TOP_DESC = `The top coordinate of the shape in absolute coordinate system even inside the parent area.`;
+const WIDTH_DESC = `The width of the shape.`;
+const HEIGHT_DESC = `The height of the shape.`;
 const PARENT_ID_DESC = `The parent ID of the shape.
 - Typically a frame ID.
 - Child shapes do not placed inside the parent shape. Just form a tree structure.
 - All shapes are drawn in the same coordinate system regardless of parent-child relationships.
 - If not provided, the shape will be created in the page.`;
 const shapeSchema = {
-    name: z.string().optional().describe("Name of the shape."),
+    name: z.string().optional().describe(NAME_DESC),
     // parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().optional().describe("left coordinate of the shape"),
-    top: z.number().optional().describe("top coordinate of the shape"),
-    width: z.number().optional().describe("Width of the shape"),
-    height: z.number().optional().describe("Height of the shape"),
+    left: z.number().optional().describe(LEFT_DESC),
+    top: z.number().optional().describe(TOP_DESC),
+    width: z.number().optional().describe(WIDTH_DESC),
+    height: z.number().optional().describe(HEIGHT_DESC),
     fillColor: z
         .string()
         .optional()
@@ -70,10 +75,10 @@ Typical size of frames:
 create it using a rectangle, ellipse, text, line, or icon. 
 
 4. Coordinate System
-The frame and the shapes inside it use the same coordinate system.
+The frame and the child shapes inside it use the same absolute coordinate system.
 For example, if the frame is located at [100, 100] and its size is 320x690,
 then the position and size of all shapes inside the frame must not exceed the 
-area from [100, 100] to [420, 790].
+area from [100, 100] to [420, 790] in the absolute coordinate system.
 `, {
     frameType: z
         .enum([
@@ -86,10 +91,10 @@ area from [100, 100] to [420, 790].
         "Custom Frame",
     ])
         .describe("Frame type"),
-    left: z.number().describe("left coordinate of the frame"),
-    top: z.number().describe("top coordinate of the frame"),
-    width: z.number().describe("Width of the frame"),
-    height: z.number().describe("Height of the frame"),
+    left: z.number().describe(LEFT_DESC),
+    top: z.number().describe(TOP_DESC),
+    width: z.number().describe(WIDTH_DESC),
+    height: z.number().describe(HEIGHT_DESC),
     fillColor: z
         .string()
         .optional()
@@ -180,12 +185,12 @@ area from [100, 100] to [420, 790].
 //   }
 // );
 server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
-    name: z.string().optional().describe("Optional name of the rectangle."),
+    name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe("left coordinate of the rectangle"),
-    top: z.number().describe("top coordinate of the rectangle"),
-    width: z.number().describe("Width of the rectangle"),
-    height: z.number().describe("Height of the rectangle"),
+    left: z.number().describe(LEFT_DESC),
+    top: z.number().describe(TOP_DESC),
+    width: z.number().describe(WIDTH_DESC),
+    height: z.number().describe(HEIGHT_DESC),
     fillColor: z
         .string()
         .optional()
@@ -225,12 +230,12 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     }
 });
 server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
-    name: z.string().optional().describe("Optional name of the ellipse."),
+    name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe("left coordinate of the ellipse"),
-    top: z.number().describe("top coordinate of the ellipse"),
-    width: z.number().describe("Width of the ellipse"),
-    height: z.number().describe("Height of the ellipse"),
+    left: z.number().describe(LEFT_DESC),
+    top: z.number().describe(TOP_DESC),
+    width: z.number().describe(WIDTH_DESC),
+    height: z.number().describe(HEIGHT_DESC),
     fillColor: z
         .string()
         .optional()
@@ -268,10 +273,10 @@ server.tool("create_text", `Create a text shape in Frame0.
 
 Text can be used to create labels, links, descriptions, paragraph, headings, etc.
 Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.`, {
-    name: z.string().optional().describe("Optional name of the text"),
+    name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe("left coordinate of the text"),
-    top: z.number().describe("top coordinate of the text"),
+    left: z.number().describe(LEFT_DESC),
+    top: z.number().describe(TOP_DESC),
     width: z
         .number()
         .optional()
@@ -361,12 +366,12 @@ Typical size of icons:
 - Small: 16 x 16
 - Large: 32 x 32
 `, {
-    name: z.string().describe("Name of the icon."),
+    name: z.string().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe("left coordinate of the icon"),
-    top: z.number().describe("top coordinate of the icon"),
-    width: z.number().describe("Width of the icon"),
-    height: z.number().describe("Height of the icon"),
+    left: z.number().describe(LEFT_DESC),
+    top: z.number().describe(TOP_DESC),
+    width: z.number().describe(WIDTH_DESC),
+    height: z.number().describe(HEIGHT_DESC),
     strokeColor: z
         .string()
         .optional()
