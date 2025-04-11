@@ -1,21 +1,22 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import fetch from "node-fetch";
-
-const URL = "http://localhost:3000";
+import { executeCommand, filterShape, textResult } from "./utils.js";
 
 const AVAILABLE_COLORS_PROMPT = `The available colors are as follows:
 $background, $foreground, $transparent, and the format $<color><level>.  
 <color> is one of the following: gray, mauve, slate, sage, olive, sand, tomato, red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue, cyan, teal, jade, green, grass, bronze, gold, brown, orange, amber, yellow, lime, mint, sky.  
 <level> is a value between 1 and 12. (1 is the lightest, and 12 is the darkest)`;
 
+const PARENT_ID_DESC = `The parent ID of the shape.
+- Typically a frame ID.
+- Child shapes do not placed inside the parent shape. Just form a tree structure.
+- All shapes are drawn in the same coordinate system regardless of parent-child relationships.
+- If not provided, the shape will be created in the page.`;
+
 const shapeSchema = {
   name: z.string().optional().describe("Name of the shape."),
-  // parentId: z
-  //   .string()
-  //   .optional()
-  //   .describe("Parent ID of the shape. Typically the frame ID"),
+  // parentId: z.string().optional().describe(PARENT_ID_DESC),
   left: z.number().optional().describe("left coordinate of the shape"),
   top: z.number().optional().describe("top coordinate of the shape"),
   width: z.number().optional().describe("Width of the shape"),
@@ -50,21 +51,6 @@ const shapeSchema = {
     .describe("Vertical alignment of the text inside the shape."),
 };
 
-async function requestToFrame0(slug: string, params: any = {}) {
-  const res = await fetch(`${URL}${slug}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error("Failed to create rectangle");
-  }
-  const data = await res.json();
-  return data;
-}
-
 // Create an MCP server
 const server = new McpServer({
   name: "frame0-mcp-server",
@@ -73,7 +59,7 @@ const server = new McpServer({
 
 server.tool(
   "create_frame",
-  `Create a frame in Frame0.
+  `Create a frame shape in Frame0.
 
 1. Frame Types and Sizes
 Typical size of frames:
@@ -120,95 +106,102 @@ area from [100, 100] to [420, 790].
       .describe(`Fill color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
   },
   async ({ frameType, left, top, width, height, fillColor }) => {
-    const data = await requestToFrame0("/create_shape_from_library", {
-      query: `${frameType}&@Frame`,
-      left,
-      top,
-      width,
-      height,
-      fillColor,
-    });
-    await requestToFrame0("/execute_command", {
-      command: "view:fit-to-screen",
-    });
-    return {
-      content: [
+    try {
+      const shapeId = await executeCommand(
+        "shape:create-shape-from-library-by-query",
         {
-          type: "text",
-          text: JSON.stringify(data),
-        },
-      ],
-    };
+          query: `${frameType}&@Frame`,
+          shapeProps: {
+            left,
+            top,
+            width,
+            height,
+            fillColor,
+          },
+        }
+      );
+      await executeCommand("view:fit-to-screen");
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult("Created frame: " + JSON.stringify(filterShape(data)));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create frame: ${error}`);
+    }
   }
 );
 
-server.tool(
-  "create_element",
-  `Create an UI element in Frame0.
-  
-Create a UI element as a priority, and if there is no suitable UI element,
-create it using a rectangle, ellipse, text, line, or icon.    
-  `,
-  {
-    elementType: z
-      .enum([
-        "Panel",
-        "Input",
-        "Select",
-        "Combobox",
-        "Radio",
-        "Checkbox",
-        "Switch",
-        "Text Area",
-        "Button",
-        "Button (primary)",
-        "Button (secondary)",
-      ])
-      .describe("Type of the UI element"),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the UI element. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
-    left: z.number().describe("left coordinate of the UI element"),
-    top: z.number().describe("top coordinate of the UI element"),
-    width: z.number().optional().describe("Width of the UI element"),
-    height: z.number().optional().describe("Height of the UI element"),
-    text: z.string().optional().describe("Text content of the UI element"),
-  },
-  async ({ elementType, parentId, left, top, width, height, text }) => {
-    const data = await requestToFrame0("/create_shape_from_library", {
-      query: `${elementType}`,
-      parentId,
-      left,
-      top,
-      width,
-      height,
-      text,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
-        },
-      ],
-    };
-  }
-);
+// server.tool(
+//   "create_element",
+//   `Create an UI element shape in Frame0.
+
+// Create a UI element as a priority, and if there is no suitable UI element,
+// create it using a rectangle, ellipse, text, line, or icon.
+//   `,
+//   {
+//     elementType: z
+//       .enum([
+//         "Panel",
+//         "Input",
+//         "Select",
+//         "Combobox",
+//         "Radio",
+//         "Checkbox",
+//         "Switch",
+//         "Text Area",
+//         "Button",
+//         "Button (primary)",
+//         "Button (secondary)",
+//       ])
+//       .describe("Type of the UI element"),
+//     parentId: z
+//       .string()
+//       .optional()
+//       .describe(
+//         PARENT_ID_DESC
+//       ),
+//     left: z.number().describe("left coordinate of the UI element"),
+//     top: z.number().describe("top coordinate of the UI element"),
+//     width: z.number().optional().describe("Width of the UI element"),
+//     height: z.number().optional().describe("Height of the UI element"),
+//     text: z.string().optional().describe("Text content of the UI element"),
+//   },
+//   async ({ elementType, parentId, left, top, width, height, text }) => {
+//     try {
+//       const shapeId = await executeCommand(
+//         "shape:create-shape-from-library-by-query",
+//         {
+//           query: `${elementType}`,
+//           shapeProps: {
+//             left,
+//             top,
+//             width,
+//             height,
+//             text,
+//           },
+//           parentId,
+//         }
+//       );
+//       const data = await executeCommand("shape:get-shape", {
+//         shapeId,
+//       });
+//       return textResult(
+//         "Created element: " + JSON.stringify(filterShape(data))
+//       );
+//     } catch (error) {
+//       console.error(error);
+//       return textResult(`Failed to create element: ${error}`);
+//     }
+//   }
+// );
 
 server.tool(
   "create_rectangle",
-  `Create a rectangle in Frame0.`,
+  `Create a rectangle shape in Frame0.`,
   {
     name: z.string().optional().describe("Optional name of the rectangle."),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the rectangle. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
+    parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe("left coordinate of the rectangle"),
     top: z.number().describe("top coordinate of the rectangle"),
     width: z.number().describe("Width of the rectangle"),
@@ -239,40 +232,40 @@ server.tool(
     strokeColor,
     corners,
   }) => {
-    const data = await requestToFrame0("/create_shape", {
-      type: "Rectangle",
-      name,
-      parentId,
-      left,
-      top,
-      width,
-      height,
-      fillColor,
-      strokeColor,
-      corners,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:create-shape", {
+        type: "Rectangle",
+        shapeProps: {
+          name,
+          left,
+          top,
+          width,
+          height,
+          fillColor,
+          strokeColor,
+          corners,
         },
-      ],
-    };
+        parentId,
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult(
+        "Created rectangle: " + JSON.stringify(filterShape(data))
+      );
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create rectangle: ${error}`);
+    }
   }
 );
 
 server.tool(
   "create_ellipse",
-  `Create an ellipse in Frame0.`,
+  `Create an ellipse shape in Frame0.`,
   {
     name: z.string().optional().describe("Optional name of the ellipse."),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the ellipse. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
+    parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe("left coordinate of the ellipse"),
     top: z.number().describe("top coordinate of the ellipse"),
     width: z.number().describe("Width of the ellipse"),
@@ -296,42 +289,42 @@ server.tool(
     fillColor,
     strokeColor,
   }) => {
-    const data = await requestToFrame0("/create_shape", {
-      type: "Ellipse",
-      name,
-      parentId,
-      left,
-      top,
-      width,
-      height,
-      fillColor,
-      strokeColor,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:create-shape", {
+        type: "Ellipse",
+        shapeProps: {
+          name,
+          left,
+          top,
+          width,
+          height,
+          fillColor,
+          strokeColor,
         },
-      ],
-    };
+        parentId,
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult(
+        "Created ellipse: " + JSON.stringify(filterShape(data))
+      );
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create ellipse: ${error}`);
+    }
   }
 );
 
 server.tool(
   "create_text",
-  `Create a text in Frame0.  
+  `Create a text shape in Frame0.  
 
 Text can be used to create labels, links, descriptions, paragraph, headings, etc.
 Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.`,
   {
     name: z.string().optional().describe("Optional name of the text"),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the text. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
+    parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe("left coordinate of the text"),
     top: z.number().describe("top coordinate of the text"),
     width: z
@@ -367,43 +360,41 @@ Text is plain text without formatting. Therefore, rich text cannot be used, and 
     fontColor,
     fontSize,
   }) => {
-    const data = await requestToFrame0("/create_shape", {
-      type: "Text",
-      parentId,
-      name,
-      left,
-      width,
-      top,
-      text,
-      horzAlign: textAlignment,
-      fontColor,
-      fontSize,
-      wordWrap: typeof width === "number" ? true : false,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:create-shape", {
+        type: "Text",
+        shapeProps: {
+          name,
+          left,
+          width,
+          top,
+          text,
+          horzAlign: textAlignment,
+          fontColor,
+          fontSize,
+          wordWrap: typeof width === "number" ? true : false,
         },
-      ],
-    };
+        parentId,
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult("Created text: " + JSON.stringify(filterShape(data)));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create text: ${error}`);
+    }
   }
 );
 
 server.tool(
   "create_line",
-  `Create a multi-point line in Frame0.
+  `Create a multi-point line shape in Frame0.
   A line can be used to create a line, arrow, a polyline, or a polygon.
   If first point and last point are the same, it will be a polygon.`,
   {
     name: z.string().optional().describe("Optional name of the line."),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the line. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
+    parentId: z.string().optional().describe(PARENT_ID_DESC),
     points: z
       .array(z.tuple([z.number(), z.number()]))
       .describe("Array of points. At least 2 points are required."),
@@ -417,28 +408,31 @@ server.tool(
       .describe(`Stroke color of the line. ${AVAILABLE_COLORS_PROMPT}`),
   },
   async ({ name, parentId, points, fillColor, strokeColor }) => {
-    const data = await requestToFrame0("/create_shape", {
-      type: "Line",
-      name,
-      path: points,
-      parentId,
-      fillColor,
-      strokeColor,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:create-shape", {
+        type: "Line",
+        shapeProps: {
+          name,
+          path: points,
+          fillColor,
+          strokeColor,
         },
-      ],
-    };
+        parentId,
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult("Created line: " + JSON.stringify(filterShape(data)));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create line: ${error}`);
+    }
   }
 );
 
 server.tool(
   "create_icon",
-  `Create an icon in Frame0.
+  `Create an icon shape in Frame0.
 
 Typical size of icons:
 - Medium: 24 x 24
@@ -447,12 +441,7 @@ Typical size of icons:
 `,
   {
     name: z.string().describe("Name of the icon."),
-    parentId: z
-      .string()
-      .optional()
-      .describe(
-        "Parent ID of the icon. Typically the frame ID. If not provided, the shape will be created in the page."
-      ),
+    parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe("left coordinate of the icon"),
     top: z.number().describe("top coordinate of the icon"),
     width: z.number().describe("Width of the icon"),
@@ -463,60 +452,64 @@ Typical size of icons:
       .describe(`Stroke color of the icon. ${AVAILABLE_COLORS_PROMPT}`),
   },
   async ({ name, parentId, left, top, width, height, strokeColor }) => {
-    const data = await requestToFrame0("/create_icon", {
-      name,
-      parentId,
-      left,
-      top,
-      width,
-      height,
-      strokeColor,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:create-icon", {
+        iconName: name,
+        shapeProps: {
+          left,
+          top,
+          width,
+          height,
+          strokeColor,
         },
-      ],
-    };
+        parentId,
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult("Created icon: " + JSON.stringify(filterShape(data)));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to create icon: ${error}`);
+    }
   }
 );
 
 server.tool(
   "update_shape",
-  `Update a shape in Frame0.`,
+  `Update properties of a shape in Frame0.`,
   { id: z.string(), ...shapeSchema },
   async ({ id, ...others }) => {
-    const data = await requestToFrame0("/update_shape", {
-      id,
-      ...others,
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
+    try {
+      const shapeId = await executeCommand("shape:update-shape", {
+        shapeId: id,
+        shapeProps: {
+          ...others,
         },
-      ],
-    };
+      });
+      const data = await executeCommand("shape:get-shape", {
+        shapeId,
+      });
+      return textResult("Update shape: " + JSON.stringify(filterShape(data)));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to update shape: ${error}`);
+    }
   }
 );
 
 server.tool(
   "get_available_icons",
-  `Get available icons in Frame0.`,
+  `Get available icon shapes in Frame0.`,
   {},
   async ({}) => {
-    const data = await requestToFrame0("/get_available_icons", {});
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(data),
-        },
-      ],
-    };
+    try {
+      const data = await executeCommand("shape:get-available-icons", {});
+      return textResult("Available icons: " + JSON.stringify(data));
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to get available icons: ${error}`);
+    }
   }
 );
 
