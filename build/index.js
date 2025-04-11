@@ -427,33 +427,55 @@ server.tool("get_available_icons", `Get available icon shapes in Frame0.`, {}, a
         return textResult(`Failed to get available icons: ${error}`);
     }
 });
-// Define design screen prompt
-server.prompt("design_screen", "Best practices for design a screen with Frame0", { screen: z.string() }, ({ screen }) => {
-    return {
-        messages: [
-            {
-                role: "assistant",
-                content: {
-                    type: "text",
-                    text: `When design a screen with Frame0, follow these best practices:
-
-1. Create a frame:
-   - First use create_frame()
-   - Set the frame type (e.g., Phone, Tablet, Desktop)
-   - Set the position (left, top) of the frame
-   - Remember the resulting frame's properties (id, position, width, height) for future reference
-
-2. Shape Creation:
-   - Use create_rectangle() for containers and input fields
-   - Use create_text() for labels, buttons text, and links
-   - Set the position (left, top) and size (width, height) of each shape based on the frame
-`,
-                },
-            },
-        ],
-        description: "Best practices for design wireframe for a screen with Frame0",
-    };
+server.tool("move_shape", `Move a shape in Frame0.`, {
+    shapeId: z.string().describe("Shape ID to move"),
+    dx: z.number().describe("Delta X"),
+    dy: z.number().describe("Delta Y"),
+}, async ({ shapeId, dx, dy }) => {
+    try {
+        await executeCommand("shape:move", {
+            shapeId,
+            dx,
+            dy,
+        });
+        return textResult(`Moved shape (id: ${shapeId}) as (${dx}, ${dy})`);
+    }
+    catch (error) {
+        console.error(error);
+        return textResult(`Failed to get available icons: ${error}`);
+    }
 });
+// Define design screen prompt
+// server.prompt(
+//   "design_screen",
+//   "Best practices for design a screen with Frame0",
+//   { screen: z.string() },
+//   ({ screen }) => {
+//     return {
+//       messages: [
+//         {
+//           role: "assistant",
+//           content: {
+//             type: "text",
+//             text: `When design a screen with Frame0, follow these best practices:
+// 1. Create a frame:
+//    - First use create_frame()
+//    - Set the frame type (e.g., Phone, Tablet, Desktop)
+//    - Set the position (left, top) of the frame
+//    - Remember the resulting frame's properties (id, position, width, height) for future reference
+// 2. Shape Creation:
+//    - Use create_rectangle() for containers and input fields
+//    - Use create_text() for labels, buttons text, and links
+//    - Set the position (left, top) and size (width, height) of each shape based on the frame
+// `,
+//           },
+//         },
+//       ],
+//       description:
+//         "Best practices for design wireframe for a screen with Frame0",
+//     };
+//   }
+// );
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
