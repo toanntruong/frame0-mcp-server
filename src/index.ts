@@ -47,14 +47,21 @@ const shapeSchema = {
       "Corner radius of the shape. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."
     ),
   text: z.string().optional().describe("Text content of the shape"),
-  horzAlign: z
-    .enum(["left", "center", "right"])
-    .optional()
-    .describe("Horizontal alignment of the text inside the shape."),
-  vertAlign: z
-    .enum(["top", "middle", "bottom"])
-    .optional()
-    .describe("Vertical alignment of the text inside the shape."),
+  // wordWrap: z
+  //   .boolean()
+  //   .optional()
+  //   .default(false)
+  //   .describe(
+  //     "Whether to wrap the text inside the shape. If true, the text will be wrapped to fit the width of the shape."
+  //   ),
+  // horzAlign: z
+  //   .enum(["left", "center", "right"])
+  //   .optional()
+  //   .describe("Horizontal alignment of the text inside the shape."),
+  // vertAlign: z
+  //   .enum(["top", "middle", "bottom"])
+  //   .optional()
+  //   .describe("Vertical alignment of the text inside the shape."),
 };
 
 // Create an MCP server
@@ -326,29 +333,31 @@ server.tool(
   "create_text",
   `Create a text shape in Frame0.  
 
-Text can be used to create labels, links, descriptions, paragraph, headings, etc.
-Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.`,
+- Text can be used to create labels, links, descriptions, paragraph, headings, etc.
+- Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.
+- Text position need to be adjusted using 'move_shape()' tool based on the width and height of the created text.
+`,
   {
     name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe(LEFT_DESC),
     top: z.number().describe(TOP_DESC),
-    width: z
-      .number()
-      .optional()
-      .describe(
-        "Optional width of the text. If you provide width, the text will be wrapped to fit the width."
-      ),
+    // width: z
+    //   .number()
+    //   .optional()
+    //   .describe(
+    //     "Optional width of the text. If you provide width, the text will be wrapped to fit the width."
+    //   ),
     text: z
       .string()
       .describe(
         "Text to display. Use newline character (0x0A) instead of '\\n' for new line."
       ),
-    textAlignment: z
-      .enum(["left", "center", "right"])
-      .optional()
-      .default("left")
-      .describe("Text alignment of the text."),
+    // textAlignment: z
+    //   .enum(["left", "center", "right"])
+    //   .optional()
+    //   .default("left")
+    //   .describe("Text alignment of the text."),
     fontColor: z
       .string()
       .optional()
@@ -360,9 +369,9 @@ Text is plain text without formatting. Therefore, rich text cannot be used, and 
     parentId,
     left,
     top,
-    width,
+    // width,
     text,
-    textAlignment,
+    // textAlignment,
     fontColor,
     fontSize,
   }) => {
@@ -372,13 +381,13 @@ Text is plain text without formatting. Therefore, rich text cannot be used, and 
         shapeProps: {
           name,
           left,
-          width,
+          // width,
           top,
           text,
-          horzAlign: textAlignment,
+          // horzAlign: textAlignment,
           fontColor,
           fontSize,
-          wordWrap: typeof width === "number" ? true : false,
+          // wordWrap: typeof width === "number" ? true : false,
         },
         parentId,
       });
@@ -496,10 +505,27 @@ server.tool(
       const data = await executeCommand("shape:get-shape", {
         shapeId: updatedId,
       });
-      return textResult("Update shape: " + JSON.stringify(filterShape(data)));
+      return textResult("Updated shape: " + JSON.stringify(filterShape(data)));
     } catch (error) {
       console.error(error);
       return textResult(`Failed to update shape: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "delete_shape",
+  `Delete a shape in Frame0.`,
+  { shapeId: z.string().describe("Shape ID to delete") },
+  async ({ shapeId, ...others }) => {
+    try {
+      await executeCommand("shape:update-shape", {
+        shapeIdArray: [shapeId],
+      });
+      return textResult("Deleted shape of id: " + shapeId);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to delete shape: ${error}`);
     }
   }
 );
