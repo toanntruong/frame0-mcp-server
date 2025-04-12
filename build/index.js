@@ -2,13 +2,13 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { executeCommand, filterShape, textResult } from "./utils.js";
+import { colors, convertColor } from "./colors.js";
 // TODO: Allow to add "title", "url" for Desktop and Browser frame
 // TODO: style theme? "sketch", "solid", "neobrutalism", ...
 // TODO: Consider to use palette colors (e.g. "primary", "secondary", "muted", "background", "foreground", "transparent")
-const AVAILABLE_COLORS_PROMPT = `The available colors are as follows:
-$background, $foreground, $transparent, and the format $<color><level>.  
-<color> is one of the following: gray, mauve, slate, sage, olive, sand, tomato, red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue, cyan, teal, jade, green, grass, bronze, gold, brown, orange, amber, yellow, lime, mint, sky.  
-<level> is a value between 1 and 12. (1 is the lightest, and 12 is the darkest)`;
+// TODO: add page when adding frame
+// TODO: get_current_page()
+const AVAILABLE_COLORS_PROMPT = `Light theme is default.`;
 const NAME_DESC = `The name of the shape.`;
 const LEFT_DESC = `The left coordinate of the shape in absolute coordinate system even inside the parent area.`;
 const TOP_DESC = `The top coordinate of the shape in absolute coordinate system even inside the parent area.`;
@@ -19,47 +19,6 @@ const PARENT_ID_DESC = `The parent ID of the shape.
 - Child shapes do not placed inside the parent shape. Just form a tree structure.
 - All shapes are drawn in the same coordinate system regardless of parent-child relationships.
 - If not provided, the shape will be created in the page.`;
-const shapeSchema = {
-    name: z.string().optional().describe(NAME_DESC),
-    // parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().optional().describe(LEFT_DESC),
-    top: z.number().optional().describe(TOP_DESC),
-    width: z.number().optional().describe(WIDTH_DESC),
-    height: z.number().optional().describe(HEIGHT_DESC),
-    fillColor: z
-        .string()
-        .optional()
-        .describe(`Fill color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
-    strokeColor: z
-        .string()
-        .optional()
-        .describe(`Stroke color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
-    fontColor: z
-        .string()
-        .optional()
-        .describe(`Font color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z.number().optional().describe("Font size of the text."),
-    corners: z
-        .array(z.number())
-        .optional()
-        .describe("Corner radius of the shape. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."),
-    text: z.string().optional().describe("Text content of the shape"),
-    // wordWrap: z
-    //   .boolean()
-    //   .optional()
-    //   .default(false)
-    //   .describe(
-    //     "Whether to wrap the text inside the shape. If true, the text will be wrapped to fit the width of the shape."
-    //   ),
-    // horzAlign: z
-    //   .enum(["left", "center", "right"])
-    //   .optional()
-    //   .describe("Horizontal alignment of the text inside the shape."),
-    // vertAlign: z
-    //   .enum(["top", "middle", "bottom"])
-    //   .optional()
-    //   .describe("Vertical alignment of the text inside the shape."),
-};
 // Create an MCP server
 const server = new McpServer({
     name: "frame0-mcp-server",
@@ -96,9 +55,9 @@ Typical size of frames:
     width: z.number().describe(WIDTH_DESC),
     height: z.number().describe(HEIGHT_DESC),
     fillColor: z
-        .string()
+        .enum(colors)
         .optional()
-        .describe(`Fill color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
+        .describe(`Background color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
 }, async ({ frameType, left, top, width, height, fillColor }) => {
     // frame headers should be consider to calculate actual content area
     const FRAME_HEADER = {
@@ -119,7 +78,7 @@ Typical size of frames:
                 top: top - header,
                 width,
                 height: height + header,
-                fillColor,
+                fillColor: convertColor(fillColor),
             },
         });
         await executeCommand("view:fit-to-screen");
@@ -208,11 +167,11 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     width: z.number().describe(WIDTH_DESC),
     height: z.number().describe(HEIGHT_DESC),
     fillColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Fill color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
     strokeColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Stroke color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
     corners: z
@@ -229,8 +188,8 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
                 top,
                 width,
                 height,
-                fillColor,
-                strokeColor,
+                fillColor: convertColor(fillColor),
+                strokeColor: convertColor(strokeColor),
                 corners,
             },
             parentId,
@@ -253,11 +212,11 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
     width: z.number().describe(WIDTH_DESC),
     height: z.number().describe(HEIGHT_DESC),
     fillColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Fill color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
     strokeColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Stroke color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
 }, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, }) => {
@@ -270,8 +229,8 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
                 top,
                 width,
                 height,
-                fillColor,
-                strokeColor,
+                fillColor: convertColor(fillColor),
+                strokeColor: convertColor(strokeColor),
             },
             parentId,
         });
@@ -287,10 +246,14 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
 });
 server.tool("create_text", `Create a text shape in Frame0.  
 
-- Text can be used to create labels, links, descriptions, paragraph, headings, etc.
 - Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.
 - Text position need to be adjusted using 'move_shape()' tool based on the width and height of the created text.
+- If text type is paragraph, text width need to be updated using 'update_shape()' tool.
 `, {
+    type: z
+        .enum(["label", "paragraph", "heading", "link", "normal"])
+        .optional()
+        .describe("Type of the text shape."),
     name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe(LEFT_DESC),
@@ -299,7 +262,7 @@ server.tool("create_text", `Create a text shape in Frame0.
     //   .number()
     //   .optional()
     //   .describe(
-    //     "Optional width of the text. If you provide width, the text will be wrapped to fit the width."
+    //     "Optional width of the text. The text will be wrapped to fit the width. It is recommend to set width if the type is 'paragraph'."
     //   ),
     text: z
         .string()
@@ -310,11 +273,11 @@ server.tool("create_text", `Create a text shape in Frame0.
     //   .default("left")
     //   .describe("Text alignment of the text."),
     fontColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Font color of the text. ${AVAILABLE_COLORS_PROMPT}`),
     fontSize: z.number().optional().describe("Font size of the text."),
-}, async ({ name, parentId, left, top, 
+}, async ({ type, name, parentId, left, top, 
 // width,
 text, 
 // textAlignment,
@@ -329,16 +292,17 @@ fontColor, fontSize, }) => {
                 top,
                 text,
                 // horzAlign: textAlignment,
-                fontColor,
+                fontColor: convertColor(fontColor),
                 fontSize,
-                // wordWrap: typeof width === "number" ? true : false,
+                wordWrap: type === "paragraph",
             },
             parentId,
         });
         const data = await executeCommand("shape:get-shape", {
             shapeId,
         });
-        return textResult("Created text: " + JSON.stringify(filterShape(data)));
+        return textResult("Created text: " +
+            JSON.stringify({ ...filterShape(data), textType: type }));
     }
     catch (error) {
         console.error(error);
@@ -354,11 +318,11 @@ server.tool("create_line", `Create a multi-point line shape in Frame0.
         .array(z.tuple([z.number(), z.number()]))
         .describe("Array of points. At least 2 points are required."),
     fillColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Fill color of the line. ${AVAILABLE_COLORS_PROMPT}`),
     strokeColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Stroke color of the line. ${AVAILABLE_COLORS_PROMPT}`),
 }, async ({ name, parentId, points, fillColor, strokeColor }) => {
@@ -368,8 +332,8 @@ server.tool("create_line", `Create a multi-point line shape in Frame0.
             shapeProps: {
                 name,
                 path: points,
-                fillColor,
-                strokeColor,
+                fillColor: convertColor(fillColor),
+                strokeColor: convertColor(strokeColor),
             },
             parentId,
         });
@@ -397,7 +361,7 @@ Typical size of icons:
     width: z.number().describe(WIDTH_DESC),
     height: z.number().describe(HEIGHT_DESC),
     strokeColor: z
-        .string()
+        .enum(colors)
         .optional()
         .describe(`Stroke color of the icon. ${AVAILABLE_COLORS_PROMPT}`),
 }, async ({ name, parentId, left, top, width, height, strokeColor }) => {
@@ -409,7 +373,7 @@ Typical size of icons:
                 top,
                 width,
                 height,
-                strokeColor,
+                strokeColor: convertColor(strokeColor),
             },
             parentId,
         });
@@ -423,12 +387,50 @@ Typical size of icons:
         return textResult(`Failed to create icon: ${error}`);
     }
 });
-server.tool("update_shape", `Update properties of a shape in Frame0.`, { shapeId: z.string(), ...shapeSchema }, async ({ shapeId, ...others }) => {
+server.tool("update_shape", `Update properties of a shape in Frame0.`, {
+    shapeId: z.string(),
+    name: z.string().optional().describe(NAME_DESC),
+    // parentId: z.string().optional().describe(PARENT_ID_DESC),
+    // left: z.number().optional().describe(LEFT_DESC),
+    // top: z.number().optional().describe(TOP_DESC),
+    width: z.number().optional().describe(WIDTH_DESC),
+    height: z.number().optional().describe(HEIGHT_DESC),
+    fillColor: z
+        .enum(colors)
+        .optional()
+        .describe("Fill color of the shape. ${AVAILABLE_COLORS_PROMPT}"),
+    strokeColor: z
+        .enum(colors)
+        .optional()
+        .describe(`Stroke color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+    fontColor: z
+        .enum(colors)
+        .optional()
+        .describe(`Font color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+    fontSize: z.number().optional().describe("Font size of the text."),
+    corners: z
+        .array(z.number())
+        .optional()
+        .describe("Corner radius of the shape. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."),
+    text: z.string().optional().describe("Text content of the shape"),
+}, async ({ shapeId, name, 
+// left,
+// top,
+width, height, strokeColor, fillColor, fontColor, fontSize, corners, }) => {
     try {
         const updatedId = await executeCommand("shape:update-shape", {
             shapeId,
             shapeProps: {
-                ...others,
+                name,
+                // left,
+                // top,
+                width,
+                height,
+                fillColor: convertColor(fillColor),
+                strokeColor: convertColor(strokeColor),
+                fontColor: convertColor(fontColor),
+                fontSize,
+                corners,
             },
         });
         const data = await executeCommand("shape:get-shape", {
