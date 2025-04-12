@@ -2,6 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { executeCommand, filterShape, textResult } from "./utils.js";
+// TODO: Allow to add "title", "url" for Desktop and Browser frame
+// TODO: style theme? "sketch", "solid", "neobrutalism", ...
+// TODO: Consider to use palette colors (e.g. "primary", "secondary", "muted", "background", "foreground", "transparent")
 const AVAILABLE_COLORS_PROMPT = `The available colors are as follows:
 $background, $foreground, $transparent, and the format $<color><level>.  
 <color> is one of the following: gray, mauve, slate, sage, olive, sand, tomato, red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue, cyan, teal, jade, green, grass, bronze, gold, brown, orange, amber, yellow, lime, mint, sky.  
@@ -76,16 +79,6 @@ Typical size of frames:
 2. Frame Structure
 - When you create a screen, you need to create a frame first.
 - The frame is the parent of all UI elements in the screen.
-
-3. UI elements in the frame
-- Find appropriate UI elements first. If there is no suitable UI element, 
-create it using a rectangle, ellipse, text, line, or icon. 
-
-4. Coordinate System
-The frame and the child shapes inside it use the same absolute coordinate system.
-For example, if the frame is located at [100, 100] and its size is 320x690,
-then the position and size of all shapes inside the frame must not exceed the 
-area from [100, 100] to [420, 790] in the absolute coordinate system.
 `, {
     frameType: z
         .enum([
@@ -107,14 +100,25 @@ area from [100, 100] to [420, 790] in the absolute coordinate system.
         .optional()
         .describe(`Fill color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
 }, async ({ frameType, left, top, width, height, fillColor }) => {
+    // frame headers should be consider to calculate actual content area
+    const FRAME_HEADER = {
+        Phone: 0,
+        Tablet: 0,
+        Desktop: 32,
+        Browser: 76,
+        Watch: 0,
+        TV: 0,
+        "Custom Frame": 0,
+    };
     try {
+        const header = FRAME_HEADER[frameType];
         const shapeId = await executeCommand("shape:create-shape-from-library-by-query", {
             query: `${frameType}&@Frame`,
             shapeProps: {
                 left,
-                top,
+                top: top - header,
                 width,
-                height,
+                height: height + header,
                 fillColor,
             },
         });
@@ -122,7 +126,12 @@ area from [100, 100] to [420, 790] in the absolute coordinate system.
         const data = await executeCommand("shape:get-shape", {
             shapeId,
         });
-        return textResult("Created frame: " + JSON.stringify(filterShape(data)));
+        return textResult("Created frame: " +
+            JSON.stringify({
+                ...filterShape(data),
+                top: top - header,
+                height: height + header,
+            }));
     }
     catch (error) {
         console.error(error);
