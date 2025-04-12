@@ -43,7 +43,14 @@ Typical size of frames:
 - Watch: 198 x 242
 - TV: 960 x 570
 
-2. Frame Structure
+2. Frame and Page
+- One frame per page.
+- Add a new page when you create a new frame.
+
+3. Frame Position
+- Recommend to place the frame at (0, 0) position in absolute coordinate system.
+
+4. Frame Structure
 - When you create a screen, you need to create a frame first.
 - The frame is the parent of all UI elements in the screen.
 `,
@@ -592,6 +599,33 @@ server.tool(
     }
   }
 );
+
+server.tool(
+  "add_page",
+  `Add a new page in Frame0.
+  - Add a new page when you create a new frame.
+  `,
+  {},
+  async () => {
+    try {
+      const pageId = await executeCommand("page:add");
+      return textResult(`Added new page (pageId: ${pageId})`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to add new page: ${error}`);
+    }
+  }
+);
+
+server.tool("get_current_page", "Get current page in Frame0.", {}, async () => {
+  try {
+    const pageId = await executeCommand("page:get-current-page");
+    return textResult(`Current page (pageId: ${pageId})`);
+  } catch (error) {
+    console.error(error);
+    return textResult(`Failed to get current page: ${error}`);
+  }
+});
 
 // Define design screen prompt
 // server.prompt(
