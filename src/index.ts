@@ -10,20 +10,6 @@ import { colors, convertColor } from "./colors.js";
 // TODO: add page when adding frame
 // TODO: get_current_page()
 
-const AVAILABLE_COLORS_PROMPT = `Light theme is default.`;
-
-const NAME_DESC = `Name of the shape.`;
-const LEFT_DESC = `Left coordinate of the shape in absolute coordinate system even inside the parent area.`;
-const TOP_DESC = `Top coordinate of the shape in absolute coordinate system even inside the parent area.`;
-const WIDTH_DESC = `Width of the shape.`;
-const HEIGHT_DESC = `Height of the shape.`;
-
-const PARENT_ID_DESC = `ID of the parent shape.
-- Typically a frame ID.
-- Child shapes do not placed inside the parent shape. Just form a tree structure.
-- All shapes are drawn in the same coordinate system regardless of parent-child relationships.
-- If not provided, the shape will be created in the page.`;
-
 // Create an MCP server
 const server = new McpServer({
   name: "frame0-mcp-server",
@@ -32,71 +18,91 @@ const server = new McpServer({
 
 server.tool(
   "create_frame",
-  `Create a frame shape in Frame0.
+  "Create a frame shape in Frame0.",
+  //   `Create a frame shape in Frame0.
 
-1. Frame Types and Sizes
-Typical size of frames:
-- Phone: 320 x 690
-- Tablet: 520 x 790
-- Desktop: 800 x 600
-- Browser: 800 x 600
-- Watch: 198 x 242
-- TV: 960 x 570
+  // 1. Frame Types and Sizes
+  // Typical size of frames:
+  // - Phone: 320 x 690
+  // - Tablet: 520 x 790
+  // - Desktop: 800 x 600
+  // - Browser: 800 x 600
+  // - Watch: 198 x 242
+  // - TV: 960 x 570
 
-2. Frame and Page
-- One frame per page.
-- Add a new page when you create a new frame.
+  // 2. Frame and Page
+  // - One frame per page.
+  // - Add a new page when you create a new frame.
 
-3. Frame Position
-- Recommend to place the frame at (0, 0) position in absolute coordinate system.
+  // 3. Frame Position
+  // - Recommend to place the frame at (0, 0) position in absolute coordinate system.
 
-4. Frame Structure
-- When you create a screen, you need to create a frame first.
-- The frame is the parent of all UI elements in the screen.
-`,
+  // 4. Frame Structure
+  // - When you create a screen, you need to create a frame first.
+  // - The frame is the parent of all UI elements in the screen.
+  // `,
   {
     frameType: z
-      .enum([
-        "Phone",
-        "Tablet",
-        "Desktop",
-        "Browser",
-        "Watch",
-        "TV",
-        "Custom Frame",
-      ])
-      .describe("Frame type"),
-    left: z.number().describe(LEFT_DESC),
-    top: z.number().describe(TOP_DESC),
-    width: z.number().describe(WIDTH_DESC),
-    height: z.number().describe(HEIGHT_DESC),
+      .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
+      .describe("Type of the frame shape to create."),
+    name: z.string().optional().describe("Name of the frame shape."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Top position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."
+      ),
+    // width: z.number().describe("Width of the frame shape."),
+    // height: z.number().describe("Height of the frame shape."),
     fillColor: z
       .enum(colors)
       .optional()
-      .describe(`Background color of the frame. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Background color of the frame shape."),
   },
-  async ({ frameType, left, top, width, height, fillColor }) => {
-    // frame headers should be consider to calculate actual content area
-    const FRAME_HEADER = {
-      Phone: 0,
-      Tablet: 0,
-      Desktop: 32,
-      Browser: 76,
-      Watch: 0,
-      TV: 0,
-      "Custom Frame": 0,
+  async ({ frameType, name, left, top, /* width, height */ fillColor }) => {
+    const FRAME_NAME = {
+      phone: "Phone",
+      tablet: "Tablet",
+      desktop: "Desktop",
+      browser: "Browser",
+      watch: "Watch",
+      tv: "TV",
+    };
+    const FRAME_SIZE = {
+      phone: { width: 320, height: 690 },
+      tablet: { width: 520, height: 790 },
+      desktop: { width: 800, height: 600 },
+      browser: { width: 800, height: 600 },
+      watch: { width: 198, height: 242 },
+      tv: { width: 960, height: 570 },
+    };
+    const FRAME_HEADER_HEIGHT = {
+      phone: 0,
+      tablet: 0,
+      desktop: 32,
+      browser: 76,
+      watch: 0,
+      tv: 0,
     };
     try {
-      const header = FRAME_HEADER[frameType];
+      // frame headers should be consider to calculate actual content area
+      const frameHeaderHeight = FRAME_HEADER_HEIGHT[frameType];
+      const frameSize = FRAME_SIZE[frameType];
+      const frameName = FRAME_NAME[frameType];
       const shapeId = await executeCommand(
         "shape:create-shape-from-library-by-query",
         {
-          query: `${frameType}&@Frame`,
+          query: `${frameName}&@Frame`,
           shapeProps: {
+            name,
             left,
-            top: top - header,
-            width,
-            height: height + header,
+            top: top - frameHeaderHeight,
+            width: frameSize.width,
+            height: frameSize.height + frameHeaderHeight,
             fillColor: convertColor(fillColor),
           },
         }
@@ -109,8 +115,8 @@ Typical size of frames:
         "Created frame: " +
           JSON.stringify({
             ...filterShape(data),
-            top: top - header,
-            height: height + header,
+            top: top - frameHeaderHeight,
+            height: frameSize.height + frameHeaderHeight,
           })
       );
     } catch (error) {
@@ -120,93 +126,41 @@ Typical size of frames:
   }
 );
 
-// server.tool(
-//   "create_element",
-//   `Create an UI element shape in Frame0.
-
-// Create a UI element as a priority, and if there is no suitable UI element,
-// create it using a rectangle, ellipse, text, line, or icon.
-//   `,
-//   {
-//     elementType: z
-//       .enum([
-//         "Panel",
-//         "Input",
-//         "Select",
-//         "Combobox",
-//         "Radio",
-//         "Checkbox",
-//         "Switch",
-//         "Text Area",
-//         "Button",
-//         "Button (primary)",
-//         "Button (secondary)",
-//       ])
-//       .describe("Type of the UI element"),
-//     parentId: z
-//       .string()
-//       .optional()
-//       .describe(
-//         PARENT_ID_DESC
-//       ),
-//     left: z.number().describe("left coordinate of the UI element"),
-//     top: z.number().describe("top coordinate of the UI element"),
-//     width: z.number().optional().describe("Width of the UI element"),
-//     height: z.number().optional().describe("Height of the UI element"),
-//     text: z.string().optional().describe("Text content of the UI element"),
-//   },
-//   async ({ elementType, parentId, left, top, width, height, text }) => {
-//     try {
-//       const shapeId = await executeCommand(
-//         "shape:create-shape-from-library-by-query",
-//         {
-//           query: `${elementType}`,
-//           shapeProps: {
-//             left,
-//             top,
-//             width,
-//             height,
-//             text,
-//           },
-//           parentId,
-//         }
-//       );
-//       const data = await executeCommand("shape:get-shape", {
-//         shapeId,
-//       });
-//       return textResult(
-//         "Created element: " + JSON.stringify(filterShape(data))
-//       );
-//     } catch (error) {
-//       console.error(error);
-//       return textResult(`Failed to create element: ${error}`);
-//     }
-//   }
-// );
-
 server.tool(
   "create_rectangle",
   `Create a rectangle shape in Frame0.`,
   {
-    name: z.string().optional().describe(NAME_DESC),
-    parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe(LEFT_DESC),
-    top: z.number().describe(TOP_DESC),
-    width: z.number().describe(WIDTH_DESC),
-    height: z.number().describe(HEIGHT_DESC),
+    name: z.string().optional().describe("Name of the rectangle shape."),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the rectangle shape in the absolute coordinate system."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Left position of the rectangle shape in the absolute coordinate system."
+      ),
+    width: z.number().describe("Width of the rectangle shape."),
+    height: z.number().describe("Height of the rectangle shape."),
     fillColor: z
       .enum(colors)
       .optional()
-      .describe(`Fill color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Fill color of the rectangle shape."),
     strokeColor: z
       .enum(colors)
       .optional()
-      .describe(`Stroke color of the rectangle. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Stroke color of the rectangle shape."),
     corners: z
       .array(z.number())
+      .length(4)
       .optional()
       .describe(
-        "Corner radius of the rectangle. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."
+        "Corner radius of the rectangle shape. Must be in the form of [left-top, right-top, right-bottom, left-bottom]."
       ),
   },
   async ({
@@ -252,20 +206,31 @@ server.tool(
   "create_ellipse",
   `Create an ellipse shape in Frame0.`,
   {
-    name: z.string().optional().describe(NAME_DESC),
-    parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe(LEFT_DESC),
-    top: z.number().describe(TOP_DESC),
-    width: z.number().describe(WIDTH_DESC),
-    height: z.number().describe(HEIGHT_DESC),
+    name: z.string().optional().describe("Name of the ellipse shape."),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the ellipse shape in the absolute coordinate system."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Top position of the ellipse shape in the absolute coordinate system."
+      ),
+    width: z.number().describe("Width of the ellipse shape."),
+    height: z.number().describe("Height of the ellipse shape."),
     fillColor: z
       .enum(colors)
       .optional()
-      .describe(`Fill color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Fill color of the ellipse shape."),
     strokeColor: z
       .enum(colors)
       .optional()
-      .describe(`Stroke color of the ellipse. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Stroke color of the ellipse shape."),
   },
   async ({
     name,
@@ -306,42 +271,45 @@ server.tool(
 
 server.tool(
   "create_text",
-  `Create a text shape in Frame0.  
-
-- Text is plain text without formatting. Therefore, rich text cannot be used, and HTML or CSS styles are not allowed.
-- Text position need to be adjusted using 'move_shape()' tool based on the width and height of the created text.
-- If text type is paragraph, text width need to be updated using 'update_shape()' tool.
-`,
+  "Create a text shape in Frame0.",
   {
     type: z
       .enum(["label", "paragraph", "heading", "link", "normal"])
       .optional()
-      .describe("Type of the text shape."),
-    name: z.string().optional().describe(NAME_DESC),
-    parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe(LEFT_DESC),
-    top: z.number().describe(TOP_DESC),
-    // width: z
-    //   .number()
-    //   .optional()
-    //   .describe(
-    //     "Optional width of the text. The text will be wrapped to fit the width. It is recommend to set width if the type is 'paragraph'."
-    //   ),
+      .describe(
+        "Type of the text shape to create. If type is 'paragraph', text width need to be updated using 'update_shape' tool."
+      ),
+    name: z.string().optional().describe("Name of the text shape."),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the text shape in the absolute coordinate system. Position need to be adjusted using 'move_shape' tool based on the width and height of the created text."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Top position of the text shape in the absolute coordinate system.  Position need to be adjusted using 'move_shape' tool based on the width and height of the created text."
+      ),
+    width: z
+      .number()
+      .optional()
+      .describe(
+        "Width of the text shape. if the type is 'paragraph' recommend to set width."
+      ),
     text: z
       .string()
       .describe(
-        "Text content to display of the text shape. Use newline character (0x0A) instead of '\\n' for new line."
+        "Plain text content to display of the text shape. Use newline character (0x0A) instead of '\\n' for new line. Dont's use HTML and CSS code in the text content."
       ),
-    // textAlignment: z
-    //   .enum(["left", "center", "right"])
-    //   .optional()
-    //   .default("left")
-    //   .describe("Text alignment of the text."),
     fontColor: z
       .enum(colors)
       .optional()
-      .describe(`Font color of the text. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z.number().optional().describe("Font size of the text."),
+      .describe("Font color of the text shape."),
+    fontSize: z.number().optional().describe("Font size of the text shape."),
   },
   async ({
     type,
@@ -349,9 +317,8 @@ server.tool(
     parentId,
     left,
     top,
-    // width,
+    width,
     text,
-    // textAlignment,
     fontColor,
     fontSize,
   }) => {
@@ -361,10 +328,9 @@ server.tool(
         shapeProps: {
           name,
           left,
-          // width,
+          width,
           top,
           text,
-          // horzAlign: textAlignment,
           fontColor: convertColor(fontColor),
           fontSize,
           wordWrap: type === "paragraph",
@@ -387,24 +353,27 @@ server.tool(
 
 server.tool(
   "create_line",
-  `Create a multi-point line shape in Frame0.
-  A line can be used to create a line, arrow, a polyline, or a polygon.
-  If first point and last point are the same, it will be a polygon.`,
+  "Create a polyline shape in Frame0.",
   {
-    name: z.string().optional().describe(NAME_DESC),
-    parentId: z.string().optional().describe(PARENT_ID_DESC),
+    name: z.string().optional().describe("Name of the line shape."),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
     points: z
       .array(z.tuple([z.number(), z.number()]))
       .min(2)
-      .describe("Array of points. At least 2 points are required."),
+      .describe(
+        "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
+      ),
     fillColor: z
       .enum(colors)
       .optional()
-      .describe(`Fill color of the line. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Fill color of the line shape."),
     strokeColor: z
       .enum(colors)
       .optional()
-      .describe(`Stroke color of the line. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Stroke color of the line. shape"),
   },
   async ({ name, parentId, points, fillColor, strokeColor }) => {
     try {
@@ -429,41 +398,54 @@ server.tool(
   }
 );
 
-// TODO: use 'size' instead of 'width' and 'height'
 server.tool(
   "create_icon",
-  `Create an icon shape in Frame0.
-
-Typical size of icons:
-- Small: 16 x 16
-- Medium: 24 x 24
-- Large: 32 x 32
-`,
+  "Create an icon shape in Frame0.",
   {
     name: z
       .string()
       .describe(
-        "The name of the icon to create. The name should be one of the result of 'get_available_icons' tool."
+        "The name of the icon shape to create. The name should be one of the result of 'get_available_icons' tool."
       ),
-    parentId: z.string().optional().describe(PARENT_ID_DESC),
-    left: z.number().describe(LEFT_DESC),
-    top: z.number().describe(TOP_DESC),
-    width: z.number().describe(WIDTH_DESC),
-    height: z.number().describe(HEIGHT_DESC),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the icon shape in the absolute coordinate system."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Top position of the icon shape in the absolute coordinate system."
+      ),
+    size: z
+      .enum(["small", "medium", "large", "extra-large"])
+      .describe(
+        "Size of the icon shape. 'small' is 16 x 16, 'medium' is 24 x 24, 'large' is 32 x 32, 'extra-large' is 48 x 48."
+      ),
     strokeColor: z
       .enum(colors)
       .optional()
-      .describe(`Stroke color of the icon. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe(`Stroke color of the icon shape.`),
   },
-  async ({ name, parentId, left, top, width, height, strokeColor }) => {
+  async ({ name, parentId, left, top, size, strokeColor }) => {
     try {
+      const sizeValue = {
+        small: 16,
+        medium: 24,
+        large: 32,
+        "extra-large": 48,
+      }[size];
       const shapeId = await executeCommand("shape:create-icon", {
         iconName: name,
         shapeProps: {
           left,
           top,
-          width,
-          height,
+          width: sizeValue ?? 24,
+          height: sizeValue ?? 24,
           strokeColor: convertColor(strokeColor),
         },
         parentId,
@@ -481,41 +463,39 @@ Typical size of icons:
 
 server.tool(
   "update_shape",
-  `Update properties of a shape in Frame0.`,
+  "Update properties of a shape in Frame0.",
   {
     shapeId: z.string().describe("ID of the shape to update"),
-    name: z.string().optional().describe(NAME_DESC),
-    // parentId: z.string().optional().describe(PARENT_ID_DESC),
-    // left: z.number().optional().describe(LEFT_DESC),
-    // top: z.number().optional().describe(TOP_DESC),
-    width: z.number().optional().describe(WIDTH_DESC),
-    height: z.number().optional().describe(HEIGHT_DESC),
-    fillColor: z
-      .enum(colors)
-      .optional()
-      .describe("Fill color of the shape. ${AVAILABLE_COLORS_PROMPT}"),
+    name: z.string().optional().describe("Name of the shape."),
+    width: z.number().optional().describe("Width of the shape."),
+    height: z.number().optional().describe("Height of the shape."),
+    fillColor: z.enum(colors).optional().describe("Fill color of the shape."),
     strokeColor: z
       .enum(colors)
       .optional()
-      .describe(`Stroke color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
+      .describe("Stroke color of the shape."),
     fontColor: z
       .enum(colors)
       .optional()
-      .describe(`Font color of the shape. ${AVAILABLE_COLORS_PROMPT}`),
-    fontSize: z.number().optional().describe("Font size of the text."),
+      .describe("Font color of the text shape."),
+    fontSize: z.number().optional().describe("Font size of the text shape."),
     corners: z
       .array(z.number())
+      .length(4)
       .optional()
       .describe(
-        "Corner radius of the shape. Must be an array of 4 numbers: [left-top, right-top, right-bottom, left-bottom]."
+        "Corner radius of the rectangle shape. Must be in the form of [left-top, right-top, right-bottom, left-bottom]."
       ),
-    text: z.string().optional().describe("Text content of the shape"),
+    text: z
+      .string()
+      .optional()
+      .describe(
+        "Plain text content to display of the text shape. Don't include escape sequences and HTML and CSS code in the text content."
+      ),
   },
   async ({
     shapeId,
     name,
-    // left,
-    // top,
     width,
     height,
     strokeColor,
@@ -529,8 +509,6 @@ server.tool(
         shapeId,
         shapeProps: {
           name,
-          // left,
-          // top,
           width,
           height,
           fillColor: convertColor(fillColor),
@@ -553,7 +531,7 @@ server.tool(
 
 server.tool(
   "delete_shape",
-  `Delete a shape in Frame0.`,
+  "Delete a shape in Frame0.",
   { shapeId: z.string().describe("ID of the shape to delete") },
   async ({ shapeId }) => {
     try {
@@ -570,7 +548,7 @@ server.tool(
 
 server.tool(
   "get_available_icons",
-  `Get available icon shapes in Frame0.`,
+  "Get available icon shapes in Frame0.",
   {},
   async ({}) => {
     try {
@@ -585,7 +563,7 @@ server.tool(
 
 server.tool(
   "move_shape",
-  `Move a shape in Frame0.`,
+  "Move a shape in Frame0.",
   {
     shapeId: z.string().describe("ID of the shape to move"),
     dx: z.number().describe("Delta X"),
@@ -608,11 +586,11 @@ server.tool(
 
 server.tool(
   "add_page",
-  `Add a new page in Frame0.
-  - Add a new page when you create a new frame.
-  `,
-  {},
-  async () => {
+  "Add a new page in Frame0. Must add a new page first when you create a new frame.",
+  {
+    // TODO: name: z.string().optional().describe("Name of the page to add."),
+  },
+  async ({}) => {
     try {
       const pageId = await executeCommand("page:add");
       return textResult(`Added new page (pageId: ${pageId})`);
@@ -632,40 +610,6 @@ server.tool("get_current_page", "Get current page in Frame0.", {}, async () => {
     return textResult(`Failed to get current page: ${error}`);
   }
 });
-
-// Define design screen prompt
-// server.prompt(
-//   "design_screen",
-//   "Best practices for design a screen with Frame0",
-//   { screen: z.string() },
-//   ({ screen }) => {
-//     return {
-//       messages: [
-//         {
-//           role: "assistant",
-//           content: {
-//             type: "text",
-//             text: `When design a screen with Frame0, follow these best practices:
-
-// 1. Create a frame:
-//    - First use create_frame()
-//    - Set the frame type (e.g., Phone, Tablet, Desktop)
-//    - Set the position (left, top) of the frame
-//    - Remember the resulting frame's properties (id, position, width, height) for future reference
-
-// 2. Shape Creation:
-//    - Use create_rectangle() for containers and input fields
-//    - Use create_text() for labels, buttons text, and links
-//    - Set the position (left, top) and size (width, height) of each shape based on the frame
-// `,
-//           },
-//         },
-//       ],
-//       description:
-//         "Best practices for design wireframe for a screen with Frame0",
-//     };
-//   }
-// );
 
 async function main() {
   const transport = new StdioServerTransport();
