@@ -12,13 +12,13 @@ import { colors, convertColor } from "./colors.js";
 
 const AVAILABLE_COLORS_PROMPT = `Light theme is default.`;
 
-const NAME_DESC = `The name of the shape.`;
-const LEFT_DESC = `The left coordinate of the shape in absolute coordinate system even inside the parent area.`;
-const TOP_DESC = `The top coordinate of the shape in absolute coordinate system even inside the parent area.`;
-const WIDTH_DESC = `The width of the shape.`;
-const HEIGHT_DESC = `The height of the shape.`;
+const NAME_DESC = `Name of the shape.`;
+const LEFT_DESC = `Left coordinate of the shape in absolute coordinate system even inside the parent area.`;
+const TOP_DESC = `Top coordinate of the shape in absolute coordinate system even inside the parent area.`;
+const WIDTH_DESC = `Width of the shape.`;
+const HEIGHT_DESC = `Height of the shape.`;
 
-const PARENT_ID_DESC = `The parent ID of the shape.
+const PARENT_ID_DESC = `ID of the parent shape.
 - Typically a frame ID.
 - Child shapes do not placed inside the parent shape. Just form a tree structure.
 - All shapes are drawn in the same coordinate system regardless of parent-child relationships.
@@ -330,7 +330,7 @@ server.tool(
     text: z
       .string()
       .describe(
-        "Text to display. Use newline character (0x0A) instead of '\\n' for new line."
+        "Text content to display of the text shape. Use newline character (0x0A) instead of '\\n' for new line."
       ),
     // textAlignment: z
     //   .enum(["left", "center", "right"])
@@ -391,10 +391,11 @@ server.tool(
   A line can be used to create a line, arrow, a polyline, or a polygon.
   If first point and last point are the same, it will be a polygon.`,
   {
-    name: z.string().optional().describe("Optional name of the line."),
+    name: z.string().optional().describe(NAME_DESC),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
     points: z
       .array(z.tuple([z.number(), z.number()]))
+      .min(2)
       .describe("Array of points. At least 2 points are required."),
     fillColor: z
       .enum(colors)
@@ -428,17 +429,22 @@ server.tool(
   }
 );
 
+// TODO: use 'size' instead of 'width' and 'height'
 server.tool(
   "create_icon",
   `Create an icon shape in Frame0.
 
 Typical size of icons:
-- Medium: 24 x 24
 - Small: 16 x 16
+- Medium: 24 x 24
 - Large: 32 x 32
 `,
   {
-    name: z.string().describe(NAME_DESC),
+    name: z
+      .string()
+      .describe(
+        "The name of the icon to create. The name should be one of the result of 'get_available_icons' tool."
+      ),
     parentId: z.string().optional().describe(PARENT_ID_DESC),
     left: z.number().describe(LEFT_DESC),
     top: z.number().describe(TOP_DESC),
@@ -477,7 +483,7 @@ server.tool(
   "update_shape",
   `Update properties of a shape in Frame0.`,
   {
-    shapeId: z.string(),
+    shapeId: z.string().describe("ID of the shape to update"),
     name: z.string().optional().describe(NAME_DESC),
     // parentId: z.string().optional().describe(PARENT_ID_DESC),
     // left: z.number().optional().describe(LEFT_DESC),
@@ -548,7 +554,7 @@ server.tool(
 server.tool(
   "delete_shape",
   `Delete a shape in Frame0.`,
-  { shapeId: z.string().describe("Shape ID to delete") },
+  { shapeId: z.string().describe("ID of the shape to delete") },
   async ({ shapeId }) => {
     try {
       await executeCommand("edit:delete", {
@@ -581,7 +587,7 @@ server.tool(
   "move_shape",
   `Move a shape in Frame0.`,
   {
-    shapeId: z.string().describe("Shape ID to move"),
+    shapeId: z.string().describe("ID of the shape to move"),
     dx: z.number().describe("Delta X"),
     dy: z.number().describe("Delta Y"),
   },
