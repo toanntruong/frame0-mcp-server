@@ -1,6 +1,5 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import fetch from "node-fetch";
-import { z } from "zod";
 
 const URL = "http://localhost:3000";
 
@@ -42,7 +41,7 @@ export function textResult(text: string): CallToolResult {
   };
 }
 
-export function filterShape(shape: any): any {
+export function filterShape(shape: any, recursive: boolean = false): any {
   const json: any = {
     id: shape.id,
     parentId: shape.parentId,
@@ -64,5 +63,22 @@ export function filterShape(shape: any): any {
   if (typeof shape.horzAlign !== "undefined") json.horzAlign = shape.horzAlign;
   if (typeof shape.vertAlign !== "undefined") json.vertAlign = shape.vertAlign;
   if (typeof shape.path !== "undefined") json.path = shape.path;
+  if (recursive) {
+    json.children = shape.children.map((child: any) => {
+      return filterShape(child, recursive);
+    });
+  }
+  return json;
+}
+
+export function filterPage(page: any): any {
+  const json: any = {
+    id: page.id,
+    name: page.name,
+    size: page.size,
+    children: page.children.map((shape: any) => {
+      return filterShape(shape, true);
+    }),
+  };
   return json;
 }

@@ -30,7 +30,7 @@ export function textResult(text) {
         ],
     };
 }
-export function filterShape(shape) {
+export function filterShape(shape, recursive = false) {
     const json = {
         id: shape.id,
         parentId: shape.parentId,
@@ -58,5 +58,21 @@ export function filterShape(shape) {
         json.vertAlign = shape.vertAlign;
     if (typeof shape.path !== "undefined")
         json.path = shape.path;
+    if (recursive) {
+        json.children = shape.children.map((child) => {
+            return filterShape(child, recursive);
+        });
+    }
+    return json;
+}
+export function filterPage(page) {
+    const json = {
+        id: page.id,
+        name: page.name,
+        size: page.size,
+        children: page.children.map((shape) => {
+            return filterShape(shape, true);
+        }),
+    };
     return json;
 }

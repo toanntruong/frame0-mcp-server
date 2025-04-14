@@ -1,14 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { executeCommand, filterShape, textResult } from "./utils.js";
+import {
+  executeCommand,
+  filterPage,
+  filterShape,
+  textResult,
+} from "./utils.js";
 import { colors, convertColor } from "./colors.js";
-
-// TODO: Allow to add "title", "url" for Desktop and Browser frame
-// TODO: style theme? "sketch", "solid", "neobrutalism", ...
-// TODO: Consider to use palette colors (e.g. "primary", "secondary", "muted", "background", "foreground", "transparent")
-// TODO: add page when adding frame
-// TODO: get_current_page()
 
 // Create an MCP server
 const server = new McpServer({
@@ -19,28 +18,6 @@ const server = new McpServer({
 server.tool(
   "create_frame",
   "Create a frame shape in Frame0.",
-  //   `Create a frame shape in Frame0.
-
-  // 1. Frame Types and Sizes
-  // Typical size of frames:
-  // - Phone: 320 x 690
-  // - Tablet: 520 x 790
-  // - Desktop: 800 x 600
-  // - Browser: 800 x 600
-  // - Watch: 198 x 242
-  // - TV: 960 x 570
-
-  // 2. Frame and Page
-  // - One frame per page.
-  // - Add a new page when you create a new frame.
-
-  // 3. Frame Position
-  // - Recommend to place the frame at (0, 0) position in absolute coordinate system.
-
-  // 4. Frame Structure
-  // - When you create a screen, you need to create a frame first.
-  // - The frame is the parent of all UI elements in the screen.
-  // `,
   {
     frameType: z
       .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
@@ -56,14 +33,12 @@ server.tool(
       .describe(
         "Top position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."
       ),
-    // width: z.number().describe("Width of the frame shape."),
-    // height: z.number().describe("Height of the frame shape."),
     fillColor: z
       .enum(colors)
       .optional()
       .describe("Background color of the frame shape."),
   },
-  async ({ frameType, name, left, top, /* width, height */ fillColor }) => {
+  async ({ frameType, name, left, top, fillColor }) => {
     const FRAME_NAME = {
       phone: "Phone",
       tablet: "Tablet",
@@ -586,14 +561,16 @@ server.tool(
 
 server.tool(
   "add_page",
-  "Add a new page in Frame0. Must add a new page first when you create a new frame.",
+  "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.",
   {
-    // TODO: name: z.string().optional().describe("Name of the page to add."),
+    name: z.string().optional().describe("Name of the page to add."),
   },
-  async ({}) => {
+  async ({ name }) => {
     try {
-      const pageId = await executeCommand("page:add");
-      return textResult(`Added new page (pageId: ${pageId})`);
+      const pageId = await executeCommand("page:add", { pageProps: { name } });
+      return textResult(
+        `Added page: ${JSON.stringify({ id: pageId, name, children: [] })}`
+      );
     } catch (error) {
       console.error(error);
       return textResult(`Failed to add new page: ${error}`);
@@ -601,15 +578,26 @@ server.tool(
   }
 );
 
-server.tool("get_current_page", "Get current page in Frame0.", {}, async () => {
-  try {
-    const pageId = await executeCommand("page:get-current-page");
-    return textResult(`Current page (pageId: ${pageId})`);
-  } catch (error) {
-    console.error(error);
-    return textResult(`Failed to get current page: ${error}`);
+server.tool(
+  "get_current_page",
+  "Get current page data in Frame0.",
+  {},
+  async () => {
+    try {
+      const pageId = await executeCommand("page:get-current-page");
+      const pageData = await executeCommand("page:get", {
+        pageId,
+        includeShapes: true,
+      });
+      return textResult(
+        `Current page: ${JSON.stringify(filterPage(pageData))}`
+      );
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to get current page data: ${error}`);
+    }
   }
-});
+);
 
 async function main() {
   const transport = new StdioServerTransport();
