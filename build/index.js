@@ -485,12 +485,13 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
     try {
         const docData = await executeCommand("doc:get", {
             exportPages: true,
-            exportShapes: exportShapes,
+            exportShapes,
         });
+        // return textResult(`The all pages data: ${JSON.stringify(docData)}`);
         if (!Array.isArray(docData.children))
             docData.children = [];
-        const pagesData = docData.children.map((page) => filterPage(page));
-        return textResult(`The all pages data: ${JSON.stringify(filterPage(pagesData))}`);
+        const pageArray = docData.children.map((page) => filterPage(page));
+        return textResult(`The all pages data: ${JSON.stringify(pageArray)}`);
     }
     catch (error) {
         console.error(error);

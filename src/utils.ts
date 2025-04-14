@@ -75,7 +75,6 @@ export function filterPage(page: any): any {
   const json: any = {
     id: page.id,
     name: page.name,
-    size: page.size,
     children: page.children?.map((shape: any) => {
       return filterShape(shape, true);
     }),
