@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { executeCommand, filterPage, filterShape, textResult, } from "./utils.js";
+import { ARROWHEADS, convertArrowhead, executeCommand, filterPage, filterShape, textResult, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
 // Create an MCP server
 const server = new McpServer({
@@ -245,6 +245,16 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         .array(z.tuple([z.number(), z.number()]))
         .min(2)
         .describe("Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."),
+    startArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("Start arrowhead of the line shape."),
+    endArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("End arrowhead of the line shape."),
     fillColor: z
         .enum(colors)
         .optional()
@@ -253,13 +263,15 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         .enum(colors)
         .optional()
         .describe("Stroke color of the line. shape"),
-}, async ({ name, parentId, points, fillColor, strokeColor }) => {
+}, async ({ name, parentId, points, startArrowhead, endArrowhead, fillColor, strokeColor, }) => {
     try {
         const shapeId = await executeCommand("shape:create-shape", {
             type: "Line",
             shapeProps: {
                 name,
                 path: points,
+                tailEndType: convertArrowhead(startArrowhead),
+                headEndType: convertArrowhead(endArrowhead),
                 fillColor: convertColor(fillColor),
                 strokeColor: convertColor(strokeColor),
             },
@@ -349,7 +361,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
         .string()
         .optional()
         .describe("Plain text content to display of the text shape. Don't include escape sequences and HTML and CSS code in the text content."),
-}, async ({ shapeId, name, width, height, strokeColor, fillColor, fontColor, fontSize, corners, }) => {
+}, async ({ shapeId, name, width, height, strokeColor, fillColor, fontColor, fontSize, corners, text, }) => {
     try {
         const updatedId = await executeCommand("shape:update-shape", {
             shapeId,
@@ -362,6 +374,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
                 fontColor: convertColor(fontColor),
                 fontSize,
                 corners,
+                text,
             },
         });
         const data = await executeCommand("shape:get-shape", {
@@ -487,7 +500,6 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
             exportPages: true,
             exportShapes,
         });
-        // return textResult(`The all pages data: ${JSON.stringify(docData)}`);
         if (!Array.isArray(docData.children))
             docData.children = [];
         const pageArray = docData.children.map((page) => filterPage(page));

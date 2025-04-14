@@ -1,5 +1,11 @@
 # Frame0 MCP Server
 
+- [ ] Add `set_link` tool
+- [ ] Add `duplicate_shape` tool
+- [ ] Add `update_page` tool
+- [ ] Add `duplicate_page` tool
+- [ ] Add `export_page_as_image` tool
+
 ## API
 
 ### Tools

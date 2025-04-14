@@ -3,6 +3,30 @@ import fetch from "node-fetch";
 
 const URL = "http://localhost:3000";
 
+export const ARROWHEADS = [
+  "none",
+  "arrow",
+  "bar",
+  "circle",
+  "circle-filled",
+  "circle-plus",
+  "cross",
+  "crowfoot-many",
+  "crowfoot-one",
+  "crowfoot-one-many",
+  "crowfoot-only-one",
+  "crowfoot-zero-many",
+  "crowfoot-zero-one",
+  "diamond",
+  "diamond-filled",
+  "dot",
+  "plus",
+  "solid-arrow",
+  "square",
+  "triangle",
+  "triangle-filled",
+];
+
 type CommandResponse = {
   success: boolean;
   data?: any;
@@ -80,4 +104,13 @@ export function filterPage(page: any): any {
     }),
   };
   return json;
+}
+
+export function convertArrowhead(arrowhead: string): string {
+  switch (arrowhead) {
+    case "none":
+      return "flat"; // "flat" in dgmjs
+    default:
+      return arrowhead;
+  }
 }

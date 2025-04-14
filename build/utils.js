@@ -1,5 +1,28 @@
 import fetch from "node-fetch";
 const URL = "http://localhost:3000";
+export const ARROWHEADS = [
+    "none",
+    "arrow",
+    "bar",
+    "circle",
+    "circle-filled",
+    "circle-plus",
+    "cross",
+    "crowfoot-many",
+    "crowfoot-one",
+    "crowfoot-one-many",
+    "crowfoot-only-one",
+    "crowfoot-zero-many",
+    "crowfoot-zero-one",
+    "diamond",
+    "diamond-filled",
+    "dot",
+    "plus",
+    "solid-arrow",
+    "square",
+    "triangle",
+    "triangle-filled",
+];
 export async function executeCommand(command, args = {}) {
     const res = await fetch(`${URL}/execute_command`, {
         method: "POST",
@@ -74,4 +97,12 @@ export function filterPage(page) {
         }),
     };
     return json;
+}
+export function convertArrowhead(arrowhead) {
+    switch (arrowhead) {
+        case "none":
+            return "flat"; // "flat" in dgmjs
+        default:
+            return arrowhead;
+    }
 }

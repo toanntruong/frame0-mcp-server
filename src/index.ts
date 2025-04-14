@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import {
+  ARROWHEADS,
+  convertArrowhead,
   executeCommand,
   filterPage,
   filterShape,
@@ -341,6 +343,16 @@ server.tool(
       .describe(
         "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
       ),
+    startArrowhead: z
+      .enum(ARROWHEADS as any)
+      .optional()
+      .default("none")
+      .describe("Start arrowhead of the line shape."),
+    endArrowhead: z
+      .enum(ARROWHEADS as any)
+      .optional()
+      .default("none")
+      .describe("End arrowhead of the line shape."),
     fillColor: z
       .enum(colors)
       .optional()
@@ -350,13 +362,23 @@ server.tool(
       .optional()
       .describe("Stroke color of the line. shape"),
   },
-  async ({ name, parentId, points, fillColor, strokeColor }) => {
+  async ({
+    name,
+    parentId,
+    points,
+    startArrowhead,
+    endArrowhead,
+    fillColor,
+    strokeColor,
+  }) => {
     try {
       const shapeId = await executeCommand("shape:create-shape", {
         type: "Line",
         shapeProps: {
           name,
           path: points,
+          tailEndType: convertArrowhead(startArrowhead),
+          headEndType: convertArrowhead(endArrowhead),
           fillColor: convertColor(fillColor),
           strokeColor: convertColor(strokeColor),
         },
@@ -478,6 +500,7 @@ server.tool(
     fontColor,
     fontSize,
     corners,
+    text,
   }) => {
     try {
       const updatedId = await executeCommand("shape:update-shape", {
@@ -491,6 +514,7 @@ server.tool(
           fontColor: convertColor(fontColor),
           fontSize,
           corners,
+          text,
         },
       });
       const data = await executeCommand("shape:get-shape", {
@@ -660,7 +684,6 @@ server.tool(
         exportPages: true,
         exportShapes,
       });
-      // return textResult(`The all pages data: ${JSON.stringify(docData)}`);
       if (!Array.isArray(docData.children)) docData.children = [];
       const pageArray = docData.children.map((page: any) => filterPage(page));
       return textResult(`The all pages data: ${JSON.stringify(pageArray)}`);
