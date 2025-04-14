@@ -22,7 +22,7 @@ server.tool(
     frameType: z
       .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
       .describe("Type of the frame shape to create."),
-    name: z.string().optional().describe("Name of the frame shape."),
+    name: z.string().describe("Name of the frame shape."),
     left: z
       .number()
       .describe(
@@ -105,7 +105,7 @@ server.tool(
   "create_rectangle",
   `Create a rectangle shape in Frame0.`,
   {
-    name: z.string().optional().describe("Name of the rectangle shape."),
+    name: z.string().describe("Name of the rectangle shape."),
     parentId: z
       .string()
       .optional()
@@ -181,7 +181,7 @@ server.tool(
   "create_ellipse",
   `Create an ellipse shape in Frame0.`,
   {
-    name: z.string().optional().describe("Name of the ellipse shape."),
+    name: z.string().describe("Name of the ellipse shape."),
     parentId: z
       .string()
       .optional()
@@ -254,7 +254,7 @@ server.tool(
       .describe(
         "Type of the text shape to create. If type is 'paragraph', text width need to be updated using 'update_shape' tool."
       ),
-    name: z.string().optional().describe("Name of the text shape."),
+    name: z.string().describe("Name of the text shape."),
     parentId: z
       .string()
       .optional()
@@ -330,7 +330,7 @@ server.tool(
   "create_line",
   "Create a polyline shape in Frame0.",
   {
-    name: z.string().optional().describe("Name of the line shape."),
+    name: z.string().describe("Name of the line shape."),
     parentId: z
       .string()
       .optional()
@@ -563,14 +563,14 @@ server.tool(
   "add_page",
   "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.",
   {
-    name: z.string().optional().describe("Name of the page to add."),
+    name: z.string().describe("Name of the page to add."),
   },
   async ({ name }) => {
     try {
-      const pageId = await executeCommand("page:add", { pageProps: { name } });
-      return textResult(
-        `Added page: ${JSON.stringify({ id: pageId, name, children: [] })}`
-      );
+      const pageData = await executeCommand("page:add", {
+        pageProps: { name },
+      });
+      return textResult(`Added page: ${JSON.stringify(pageData)}`);
     } catch (error) {
       console.error(error);
       return textResult(`Failed to add new page: ${error}`);
@@ -579,22 +579,95 @@ server.tool(
 );
 
 server.tool(
-  "get_current_page",
-  "Get current page data in Frame0.",
+  "get_current_page_id",
+  "Get ID of the current page in Frame0.",
   {},
   async () => {
     try {
       const pageId = await executeCommand("page:get-current-page");
+      return textResult(`Current page ID is ${pageId},`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to get current page: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "set_current_page_by_id",
+  "Set current page by ID in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to set as current page."),
+  },
+  async ({ pageId }) => {
+    try {
+      await executeCommand("page:set-current-page", {
+        pageId,
+      });
+      return textResult(`Current page ID is ${pageId}`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to set current page: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "get_page",
+  "Get page data in Frame0.",
+  {
+    pageId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the page to get data. If not provided, the current page data is returned."
+      ),
+    exportShapes: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe("Export shapes data included in the page."),
+  },
+  async ({ pageId, exportShapes }) => {
+    try {
       const pageData = await executeCommand("page:get", {
         pageId,
-        includeShapes: true,
+        exportShapes,
       });
       return textResult(
-        `Current page: ${JSON.stringify(filterPage(pageData))}`
+        `The page data: ${JSON.stringify(filterPage(pageData))}`
       );
     } catch (error) {
       console.error(error);
-      return textResult(`Failed to get current page data: ${error}`);
+      return textResult(`Failed to get page data: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "get_all_pages",
+  "Get all pages data in Frame0.",
+  {
+    exportShapes: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe("Export shapes data included in the page data."),
+  },
+  async ({ exportShapes }) => {
+    try {
+      const docData = await executeCommand("doc:get", {
+        exportPages: true,
+        exportShapes: exportShapes,
+      });
+      if (!Array.isArray(docData.children)) docData.children = [];
+      const pagesData = docData.children.map((page: any) => filterPage(page));
+      return textResult(
+        `The all pages data: ${JSON.stringify(filterPage(pagesData))}`
+      );
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to get page data: ${error}`);
     }
   }
 );

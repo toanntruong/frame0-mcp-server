@@ -15,7 +15,10 @@
 - `get_available_icons`
 - `move_shape`
 - `add_page`
-- `get_current_page`
+- `get_current_page_id`
+- `set_current_page_by_id`
+_ `get_page`
+- `get_all_pages`
 
 ## Dev
 
@@ -34,4 +37,3 @@
 ```
 
 3. Restart Claude Desktop.
-

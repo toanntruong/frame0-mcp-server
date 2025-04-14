@@ -70,7 +70,7 @@ export function filterPage(page) {
         id: page.id,
         name: page.name,
         size: page.size,
-        children: page.children.map((shape) => {
+        children: page.children?.map((shape) => {
             return filterShape(shape, true);
         }),
     };
