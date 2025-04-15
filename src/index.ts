@@ -529,6 +529,48 @@ server.tool(
 );
 
 server.tool(
+  "duplicate_shape",
+  "Duplicate a shape in Frame0.",
+  {
+    shapeId: z.string().describe("ID of the shape to duplicate"),
+    parentId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the parent shape where the duplicated shape will be added. If not provided, the duplicated shape will be added to the current page."
+      ),
+    dx: z
+      .number()
+      .optional()
+      .describe("Delta X value by which the duplicated shape moves."),
+    dy: z
+      .number()
+      .optional()
+      .describe("Delta Y value by which the duplicated shape moves."),
+  },
+  async ({ shapeId, parentId, dx, dy }) => {
+    try {
+      const duplicatedShapeIdArray = await executeCommand("edit:duplicate", {
+        shapeIdArray: [shapeId],
+        parentId,
+        dx,
+        dy,
+      });
+      const duplicatedShapeId = duplicatedShapeIdArray[0];
+      const data = await executeCommand("shape:get-shape", {
+        shapeId: duplicatedShapeId,
+      });
+      return textResult(
+        "Duplicated shape: " + JSON.stringify(filterShape(data))
+      );
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to duplicate shape: ${error}`);
+    }
+  }
+);
+
+server.tool(
   "delete_shape",
   "Delete a shape in Frame0.",
   { shapeId: z.string().describe("ID of the shape to delete") },
@@ -598,6 +640,30 @@ server.tool(
     } catch (error) {
       console.error(error);
       return textResult(`Failed to add new page: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "update_page",
+  "Update a page in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to update."),
+    name: z.string().describe("Name of the page."),
+  },
+  async ({ pageId, name }) => {
+    try {
+      const updatedPageId = await executeCommand("page:update", {
+        pageId,
+        pageProps: { name },
+      });
+      const pageData = await executeCommand("page:get", {
+        pageId: updatedPageId,
+      });
+      return textResult(`Updated page: ${JSON.stringify(pageData)}`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to update page: ${error}`);
     }
   }
 );
@@ -690,6 +756,50 @@ server.tool(
     } catch (error) {
       console.error(error);
       return textResult(`Failed to get page data: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "duplicate_page",
+  "Duplicate a page in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to duplicate"),
+    name: z.string().optional().describe("Name of the duplicated page."),
+  },
+  async ({ pageId, name }) => {
+    try {
+      const duplicatedPageId = await executeCommand("page:duplicate", {
+        pageId,
+        pageProps: { name },
+      });
+      const pageData = await executeCommand("page:get", {
+        pageId: duplicatedPageId,
+        exportShapes: true,
+      });
+      return textResult(`Duplicated page data: ${JSON.stringify(pageData)}`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to duplicate page: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "delete_page",
+  "Delete a page in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to delete"),
+  },
+  async ({ pageId }) => {
+    try {
+      await executeCommand("page:delete", {
+        pageId,
+      });
+      return textResult(`Deleted page ID is${pageId}`);
+    } catch (error) {
+      console.error(error);
+      return textResult(`Failed to delete page: ${error}`);
     }
   }
 );
