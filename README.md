@@ -1,14 +1,5 @@
 # Frame0 MCP Server
 
-- [ ] Add `set_link` tool
-- [x] Add `duplicate_shape` tool
-- [x] Add `update_page` tool
-- [x] Add `duplicate_page` tool
-- [x] Add `delete_page` tool
-- [ ] Add `export_page_as_image` tool
-- [ ] Add `group` and `ungroup` tools
-- [ ] Add `bring-to-front`, `send-to-back` tools
-
 ## API
 
 ### Tools
@@ -20,13 +11,17 @@
 - `create_line`
 - `create_icon`
 - `update_shape`
+- `duplicate_shape`
 - `delete_shape`
 - `get_available_icons`
 - `move_shape`
 - `add_page`
+- `update_page`
+- `duplicate_page`
+- `delete_page`
 - `get_current_page_id`
 - `set_current_page_by_id`
-_ `get_page`
+- `get_page`
 - `get_all_pages`
 
 ## Dev
