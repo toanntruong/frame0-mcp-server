@@ -1,8 +1,23 @@
 # Frame0 MCP Server
 
-## API
+## Setup
 
-### Tools
+Setup for Claude Desktop in `claude_desktop_config.json` as below:
+
+```json
+{
+  "mcpServers": {
+    "frame0-mcp-server": {
+      "command": "npx",
+      "args": ["-y", "frame0-mcp-server"]
+    }
+  }
+}
+```
+
+You can use `--api-port=<port>` optional parameter to use another port number for Frame0's API server.
+
+## Tools
 
 - `create_frame`
 - `create_rectangle`
@@ -26,8 +41,9 @@
 
 ## Dev
 
-1. clone this repository
-2. Update `claude_desktop_config.json` in Claude Desktop as below:
+1. Clone this repository.
+2. Build with `npm run build`.
+3. Update `claude_desktop_config.json` in Claude Desktop as below.
 
 ```json
 {
@@ -40,4 +56,4 @@
 }
 ```
 
-3. Restart Claude Desktop.
+4. Restart Claude Desktop.

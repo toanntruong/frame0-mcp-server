@@ -4,12 +4,31 @@ import { z } from "zod";
 import {
   ARROWHEADS,
   convertArrowhead,
-  executeCommand,
+  command,
   filterPage,
   filterShape,
   textResult,
 } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+
+// port number for the Frame0's API server (default: 58320)
+let apiPort: number = 58320;
+
+// command line argument parsing
+const args = process.argv.slice(2);
+const apiPortArg = args.find((arg) => arg.startsWith("--api-port="));
+if (apiPortArg) {
+  const port = apiPortArg.split("=")[1];
+  try {
+    apiPort = parseInt(port, 10);
+    if (isNaN(apiPort) || apiPort < 0 || apiPort > 65535) {
+      throw new Error(`Invalid port number: ${port}`);
+    }
+  } catch (error) {
+    console.error(`Invalid port number: ${port}`);
+    process.exit(1);
+  }
+}
 
 // Create an MCP server
 const server = new McpServer({
@@ -70,7 +89,8 @@ server.tool(
       const frameHeaderHeight = FRAME_HEADER_HEIGHT[frameType];
       const frameSize = FRAME_SIZE[frameType];
       const frameName = FRAME_NAME[frameType];
-      const shapeId = await executeCommand(
+      const shapeId = await command(
+        apiPort,
         "shape:create-shape-from-library-by-query",
         {
           query: `${frameName}&@Frame`,
@@ -84,8 +104,8 @@ server.tool(
           },
         }
       );
-      await executeCommand("view:fit-to-screen");
-      const data = await executeCommand("shape:get-shape", {
+      await command(apiPort, "view:fit-to-screen");
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult(
@@ -152,7 +172,7 @@ server.tool(
     corners,
   }) => {
     try {
-      const shapeId = await executeCommand("shape:create-shape", {
+      const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Rectangle",
         shapeProps: {
           name,
@@ -166,7 +186,7 @@ server.tool(
         },
         parentId,
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult(
@@ -220,7 +240,7 @@ server.tool(
     strokeColor,
   }) => {
     try {
-      const shapeId = await executeCommand("shape:create-shape", {
+      const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Ellipse",
         shapeProps: {
           name,
@@ -233,7 +253,7 @@ server.tool(
         },
         parentId,
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult(
@@ -300,7 +320,7 @@ server.tool(
     fontSize,
   }) => {
     try {
-      const shapeId = await executeCommand("shape:create-shape", {
+      const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Text",
         shapeProps: {
           name,
@@ -314,7 +334,7 @@ server.tool(
         },
         parentId,
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult(
@@ -372,7 +392,7 @@ server.tool(
     strokeColor,
   }) => {
     try {
-      const shapeId = await executeCommand("shape:create-shape", {
+      const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
         shapeProps: {
           name,
@@ -384,7 +404,7 @@ server.tool(
         },
         parentId,
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult("Created line: " + JSON.stringify(filterShape(data)));
@@ -436,7 +456,7 @@ server.tool(
         large: 32,
         "extra-large": 48,
       }[size];
-      const shapeId = await executeCommand("shape:create-icon", {
+      const shapeId = await command(apiPort, "shape:create-icon", {
         iconName: name,
         shapeProps: {
           left,
@@ -447,7 +467,7 @@ server.tool(
         },
         parentId,
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId,
       });
       return textResult("Created icon: " + JSON.stringify(filterShape(data)));
@@ -503,7 +523,7 @@ server.tool(
     text,
   }) => {
     try {
-      const updatedId = await executeCommand("shape:update-shape", {
+      const updatedId = await command(apiPort, "shape:update-shape", {
         shapeId,
         shapeProps: {
           name,
@@ -517,7 +537,7 @@ server.tool(
           text,
         },
       });
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId: updatedId,
       });
       return textResult("Updated shape: " + JSON.stringify(filterShape(data)));
@@ -550,14 +570,14 @@ server.tool(
   },
   async ({ shapeId, parentId, dx, dy }) => {
     try {
-      const duplicatedShapeIdArray = await executeCommand("edit:duplicate", {
+      const duplicatedShapeIdArray = await command(apiPort, "edit:duplicate", {
         shapeIdArray: [shapeId],
         parentId,
         dx,
         dy,
       });
       const duplicatedShapeId = duplicatedShapeIdArray[0];
-      const data = await executeCommand("shape:get-shape", {
+      const data = await command(apiPort, "shape:get-shape", {
         shapeId: duplicatedShapeId,
       });
       return textResult(
@@ -576,7 +596,7 @@ server.tool(
   { shapeId: z.string().describe("ID of the shape to delete") },
   async ({ shapeId }) => {
     try {
-      await executeCommand("edit:delete", {
+      await command(apiPort, "edit:delete", {
         shapeIdArray: [shapeId],
       });
       return textResult("Deleted shape of id: " + shapeId);
@@ -593,7 +613,7 @@ server.tool(
   {},
   async ({}) => {
     try {
-      const data = await executeCommand("shape:get-available-icons", {});
+      const data = await command(apiPort, "shape:get-available-icons", {});
       return textResult("Available icons: " + JSON.stringify(data));
     } catch (error) {
       console.error(error);
@@ -612,7 +632,7 @@ server.tool(
   },
   async ({ shapeId, dx, dy }) => {
     try {
-      await executeCommand("shape:move", {
+      await command(apiPort, "shape:move", {
         shapeId,
         dx,
         dy,
@@ -633,7 +653,7 @@ server.tool(
   },
   async ({ name }) => {
     try {
-      const pageData = await executeCommand("page:add", {
+      const pageData = await command(apiPort, "page:add", {
         pageProps: { name },
       });
       return textResult(`Added page: ${JSON.stringify(pageData)}`);
@@ -653,11 +673,11 @@ server.tool(
   },
   async ({ pageId, name }) => {
     try {
-      const updatedPageId = await executeCommand("page:update", {
+      const updatedPageId = await command(apiPort, "page:update", {
         pageId,
         pageProps: { name },
       });
-      const pageData = await executeCommand("page:get", {
+      const pageData = await command(apiPort, "page:get", {
         pageId: updatedPageId,
       });
       return textResult(`Updated page: ${JSON.stringify(pageData)}`);
@@ -674,7 +694,7 @@ server.tool(
   {},
   async () => {
     try {
-      const pageId = await executeCommand("page:get-current-page");
+      const pageId = await command(apiPort, "page:get-current-page");
       return textResult(`Current page ID is ${pageId},`);
     } catch (error) {
       console.error(error);
@@ -691,7 +711,7 @@ server.tool(
   },
   async ({ pageId }) => {
     try {
-      await executeCommand("page:set-current-page", {
+      await command(apiPort, "page:set-current-page", {
         pageId,
       });
       return textResult(`Current page ID is ${pageId}`);
@@ -720,7 +740,7 @@ server.tool(
   },
   async ({ pageId, exportShapes }) => {
     try {
-      const pageData = await executeCommand("page:get", {
+      const pageData = await command(apiPort, "page:get", {
         pageId,
         exportShapes,
       });
@@ -746,7 +766,7 @@ server.tool(
   },
   async ({ exportShapes }) => {
     try {
-      const docData = await executeCommand("doc:get", {
+      const docData = await command(apiPort, "doc:get", {
         exportPages: true,
         exportShapes,
       });
@@ -769,11 +789,11 @@ server.tool(
   },
   async ({ pageId, name }) => {
     try {
-      const duplicatedPageId = await executeCommand("page:duplicate", {
+      const duplicatedPageId = await command(apiPort, "page:duplicate", {
         pageId,
         pageProps: { name },
       });
-      const pageData = await executeCommand("page:get", {
+      const pageData = await command(apiPort, "page:get", {
         pageId: duplicatedPageId,
         exportShapes: true,
       });
@@ -793,7 +813,7 @@ server.tool(
   },
   async ({ pageId }) => {
     try {
-      await executeCommand("page:delete", {
+      await command(apiPort, "page:delete", {
         pageId,
       });
       return textResult(`Deleted page ID is${pageId}`);

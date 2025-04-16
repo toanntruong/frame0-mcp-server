@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-const URL = "http://localhost:3000";
+const URL = "http://localhost";
 export const ARROWHEADS = [
     "none",
     "arrow",
@@ -23,8 +23,8 @@ export const ARROWHEADS = [
     "triangle",
     "triangle-filled",
 ];
-export async function executeCommand(command, args = {}) {
-    const res = await fetch(`${URL}/execute_command`, {
+export async function command(port, command, args = {}) {
+    const res = await fetch(`${URL}:${port}/execute_command`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
