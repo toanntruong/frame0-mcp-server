@@ -46,13 +46,17 @@ server.tool(
     name: z.string().describe("Name of the frame shape."),
     left: z
       .number()
+      .optional()
+      .default(0)
       .describe(
-        "Left position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."
+        "Left position of the frame shape in the absolute coordinate system."
       ),
     top: z
       .number()
+      .optional()
+      .default(0)
       .describe(
-        "Top position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."
+        "Top position of the frame shape in the absolute coordinate system."
       ),
     fillColor: z
       .enum(colors)
@@ -131,7 +135,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     left: z
       .number()
       .describe(
@@ -207,7 +213,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     left: z
       .number()
       .describe(
@@ -280,7 +288,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     left: z
       .number()
       .describe(
@@ -356,7 +366,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     points: z
       .array(z.tuple([z.number(), z.number()]))
       .min(2)
@@ -429,7 +441,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     left: z
       .number()
       .describe(
@@ -490,7 +504,9 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe("ID of the parent shape. Typically a frame ID."),
+      .describe(
+        "ID of the parent shape. Typically frame ID or container's ID."
+      ),
     mimeType: z
       .enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
       .describe("MIME type of the image."),

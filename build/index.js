@@ -34,10 +34,14 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
     name: z.string().describe("Name of the frame shape."),
     left: z
         .number()
-        .describe("Left position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."),
+        .optional()
+        .default(0)
+        .describe("Left position of the frame shape in the absolute coordinate system."),
     top: z
         .number()
-        .describe("Top position of the frame shape in the absolute coordinate system. Typically (0, 0) position for the frame."),
+        .optional()
+        .default(0)
+        .describe("Top position of the frame shape in the absolute coordinate system."),
     fillColor: z
         .enum(colors)
         .optional()
@@ -104,7 +108,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     left: z
         .number()
         .describe("Left position of the rectangle shape in the absolute coordinate system."),
@@ -157,7 +161,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     left: z
         .number()
         .describe("Left position of the ellipse shape in the absolute coordinate system."),
@@ -208,7 +212,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     left: z
         .number()
         .describe("Left position of the text shape in the absolute coordinate system. Position need to be adjusted using 'move_shape' tool based on the width and height of the created text."),
@@ -259,7 +263,7 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     points: z
         .array(z.tuple([z.number(), z.number()]))
         .min(2)
@@ -313,7 +317,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     left: z
         .number()
         .describe("Left position of the icon shape in the absolute coordinate system."),
@@ -361,7 +365,7 @@ server.tool("create_image", "Create an image shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically a frame ID."),
+        .describe("ID of the parent shape. Typically frame ID or container's ID."),
     mimeType: z
         .enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
         .describe("MIME type of the image."),
