@@ -483,6 +483,55 @@ server.tool(
 );
 
 server.tool(
+  "create_image",
+  "Create an image shape in Frame0.",
+  {
+    name: z.string().describe("The name of the image shape to create."),
+    parentId: z
+      .string()
+      .optional()
+      .describe("ID of the parent shape. Typically a frame ID."),
+    mimeType: z
+      .enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
+      .describe("MIME type of the image."),
+    imageData: z.string().describe("Base64 encoded image data."),
+    left: z
+      .number()
+      .describe(
+        "Left position of the image shape in the absolute coordinate system."
+      ),
+    top: z
+      .number()
+      .describe(
+        "Top position of the image shape in the absolute coordinate system."
+      ),
+  },
+  async ({ name, parentId, mimeType, imageData, left, top }) => {
+    try {
+      const shapeId = await command(apiPort, "shape:create-image", {
+        mimeType,
+        imageData,
+        shapeProps: {
+          name,
+          left,
+          top,
+        },
+        parentId,
+      });
+      const data = await command(apiPort, "shape:get-shape", {
+        shapeId,
+      });
+      return response.text(
+        "Created image: " + JSON.stringify(filterShape(data))
+      );
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to create image: ${error}`);
+    }
+  }
+);
+
+server.tool(
   "update_shape",
   "Update properties of a shape in Frame0.",
   {
