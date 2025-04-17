@@ -45,6 +45,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 1. Clone this repository.
 2. Build with `npm run build`.
 3. Update `claude_desktop_config.json` in Claude Desktop as below.
+4. Restart Claude Desktop.
 
 ```json
 {
@@ -56,5 +57,3 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
   }
 }
 ```
-
-4. Restart Claude Desktop.

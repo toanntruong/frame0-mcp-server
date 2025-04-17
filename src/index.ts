@@ -695,6 +695,50 @@ server.tool(
 );
 
 server.tool(
+  "duplicate_page",
+  "Duplicate a page in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to duplicate"),
+    name: z.string().optional().describe("Name of the duplicated page."),
+  },
+  async ({ pageId, name }) => {
+    try {
+      const duplicatedPageId = await command(apiPort, "page:duplicate", {
+        pageId,
+        pageProps: { name },
+      });
+      const pageData = await command(apiPort, "page:get", {
+        pageId: duplicatedPageId,
+        exportShapes: true,
+      });
+      return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to duplicate page: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "delete_page",
+  "Delete a page in Frame0.",
+  {
+    pageId: z.string().describe("ID of the page to delete"),
+  },
+  async ({ pageId }) => {
+    try {
+      await command(apiPort, "page:delete", {
+        pageId,
+      });
+      return response.text(`Deleted page ID is${pageId}`);
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to delete page: ${error}`);
+    }
+  }
+);
+
+server.tool(
   "get_current_page_id",
   "Get ID of the current page in Frame0.",
   {},
@@ -782,50 +826,6 @@ server.tool(
     } catch (error) {
       console.error(error);
       return response.error(`Failed to get page data: ${error}`);
-    }
-  }
-);
-
-server.tool(
-  "duplicate_page",
-  "Duplicate a page in Frame0.",
-  {
-    pageId: z.string().describe("ID of the page to duplicate"),
-    name: z.string().optional().describe("Name of the duplicated page."),
-  },
-  async ({ pageId, name }) => {
-    try {
-      const duplicatedPageId = await command(apiPort, "page:duplicate", {
-        pageId,
-        pageProps: { name },
-      });
-      const pageData = await command(apiPort, "page:get", {
-        pageId: duplicatedPageId,
-        exportShapes: true,
-      });
-      return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
-    } catch (error) {
-      console.error(error);
-      return response.error(`Failed to duplicate page: ${error}`);
-    }
-  }
-);
-
-server.tool(
-  "delete_page",
-  "Delete a page in Frame0.",
-  {
-    pageId: z.string().describe("ID of the page to delete"),
-  },
-  async ({ pageId }) => {
-    try {
-      await command(apiPort, "page:delete", {
-        pageId,
-      });
-      return response.text(`Deleted page ID is${pageId}`);
-    } catch (error) {
-      console.error(error);
-      return response.error(`Failed to delete page: ${error}`);
     }
   }
 );
