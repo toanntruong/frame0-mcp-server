@@ -32,21 +32,11 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
         .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
         .describe("Type of the frame shape to create."),
     name: z.string().describe("Name of the frame shape."),
-    left: z
-        .number()
-        .optional()
-        .default(0)
-        .describe("Left position of the frame shape in the absolute coordinate system."),
-    top: z
-        .number()
-        .optional()
-        .default(0)
-        .describe("Top position of the frame shape in the absolute coordinate system."),
     fillColor: z
         .enum(colors)
         .optional()
         .describe("Background color of the frame shape."),
-}, async ({ frameType, name, left, top, fillColor }) => {
+}, async ({ frameType, name, fillColor }) => {
     const FRAME_NAME = {
         phone: "Phone",
         tablet: "Tablet",
@@ -80,8 +70,8 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
             query: `${frameName}&@Frame`,
             shapeProps: {
                 name,
-                left,
-                top: top - frameHeaderHeight,
+                left: 0,
+                top: -frameHeaderHeight,
                 width: frameSize.width,
                 height: frameSize.height + frameHeaderHeight,
                 fillColor: convertColor(fillColor),
@@ -94,7 +84,7 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
         return response.text("Created frame: " +
             JSON.stringify({
                 ...filterShape(data),
-                top: top - frameHeaderHeight,
+                top: -frameHeaderHeight,
                 height: frameSize.height + frameHeaderHeight,
             }));
     }
