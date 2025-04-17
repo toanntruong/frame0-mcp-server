@@ -1,7 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, textResult, } from "./utils.js";
+import * as response from "./response.js";
+import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
@@ -86,7 +87,7 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created frame: " +
+        return response.text("Created frame: " +
             JSON.stringify({
                 ...filterShape(data),
                 top: top - frameHeaderHeight,
@@ -95,7 +96,7 @@ server.tool("create_frame", "Create a frame shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create frame: ${error}`);
+        return response.error(`Failed to create frame: ${error}`);
     }
 });
 server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
@@ -144,11 +145,11 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created rectangle: " + JSON.stringify(filterShape(data)));
+        return response.text("Created rectangle: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create rectangle: ${error}`);
+        return response.error(`Failed to create rectangle: ${error}`);
     }
 });
 server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
@@ -191,11 +192,11 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created ellipse: " + JSON.stringify(filterShape(data)));
+        return response.text("Created ellipse: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create ellipse: ${error}`);
+        return response.error(`Failed to create ellipse: ${error}`);
     }
 });
 server.tool("create_text", "Create a text shape in Frame0.", {
@@ -245,12 +246,12 @@ server.tool("create_text", "Create a text shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created text: " +
+        return response.text("Created text: " +
             JSON.stringify({ ...filterShape(data), textType: type }));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create text: ${error}`);
+        return response.error(`Failed to create text: ${error}`);
     }
 });
 server.tool("create_line", "Create a polyline shape in Frame0.", {
@@ -298,11 +299,11 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created line: " + JSON.stringify(filterShape(data)));
+        return response.text("Created line: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create line: ${error}`);
+        return response.error(`Failed to create line: ${error}`);
     }
 });
 server.tool("create_icon", "Create an icon shape in Frame0.", {
@@ -348,11 +349,11 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
         });
-        return textResult("Created icon: " + JSON.stringify(filterShape(data)));
+        return response.text("Created icon: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to create icon: ${error}`);
+        return response.error(`Failed to create icon: ${error}`);
     }
 });
 server.tool("update_shape", "Update properties of a shape in Frame0.", {
@@ -398,11 +399,11 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId: updatedId,
         });
-        return textResult("Updated shape: " + JSON.stringify(filterShape(data)));
+        return response.text("Updated shape: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to update shape: ${error}`);
+        return response.error(`Failed to update shape: ${error}`);
     }
 });
 server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
@@ -431,11 +432,11 @@ server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId: duplicatedShapeId,
         });
-        return textResult("Duplicated shape: " + JSON.stringify(filterShape(data)));
+        return response.text("Duplicated shape: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to duplicate shape: ${error}`);
+        return response.error(`Failed to duplicate shape: ${error}`);
     }
 });
 server.tool("delete_shape", "Delete a shape in Frame0.", { shapeId: z.string().describe("ID of the shape to delete") }, async ({ shapeId }) => {
@@ -443,21 +444,21 @@ server.tool("delete_shape", "Delete a shape in Frame0.", { shapeId: z.string().d
         await command(apiPort, "edit:delete", {
             shapeIdArray: [shapeId],
         });
-        return textResult("Deleted shape of id: " + shapeId);
+        return response.text("Deleted shape of id: " + shapeId);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to delete shape: ${error}`);
+        return response.error(`Failed to delete shape: ${error}`);
     }
 });
 server.tool("get_available_icons", "Get available icon shapes in Frame0.", {}, async ({}) => {
     try {
         const data = await command(apiPort, "shape:get-available-icons", {});
-        return textResult("Available icons: " + JSON.stringify(data));
+        return response.text("Available icons: " + JSON.stringify(data));
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to get available icons: ${error}`);
+        return response.error(`Failed to get available icons: ${error}`);
     }
 });
 server.tool("move_shape", "Move a shape in Frame0.", {
@@ -471,11 +472,11 @@ server.tool("move_shape", "Move a shape in Frame0.", {
             dx,
             dy,
         });
-        return textResult(`Moved shape (id: ${shapeId}) as (${dx}, ${dy})`);
+        return response.text(`Moved shape (id: ${shapeId}) as (${dx}, ${dy})`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to get available icons: ${error}`);
+        return response.error(`Failed to get available icons: ${error}`);
     }
 });
 server.tool("add_page", "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.", {
@@ -485,11 +486,11 @@ server.tool("add_page", "Add a new page in Frame0. Must add a new page first whe
         const pageData = await command(apiPort, "page:add", {
             pageProps: { name },
         });
-        return textResult(`Added page: ${JSON.stringify(pageData)}`);
+        return response.text(`Added page: ${JSON.stringify(pageData)}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to add new page: ${error}`);
+        return response.error(`Failed to add new page: ${error}`);
     }
 });
 server.tool("update_page", "Update a page in Frame0.", {
@@ -504,21 +505,21 @@ server.tool("update_page", "Update a page in Frame0.", {
         const pageData = await command(apiPort, "page:get", {
             pageId: updatedPageId,
         });
-        return textResult(`Updated page: ${JSON.stringify(pageData)}`);
+        return response.text(`Updated page: ${JSON.stringify(pageData)}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to update page: ${error}`);
+        return response.error(`Failed to update page: ${error}`);
     }
 });
 server.tool("get_current_page_id", "Get ID of the current page in Frame0.", {}, async () => {
     try {
         const pageId = await command(apiPort, "page:get-current-page");
-        return textResult(`Current page ID is ${pageId},`);
+        return response.text(`Current page ID is ${pageId},`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to get current page: ${error}`);
+        return response.error(`Failed to get current page: ${error}`);
     }
 });
 server.tool("set_current_page_by_id", "Set current page by ID in Frame0.", {
@@ -528,11 +529,11 @@ server.tool("set_current_page_by_id", "Set current page by ID in Frame0.", {
         await command(apiPort, "page:set-current-page", {
             pageId,
         });
-        return textResult(`Current page ID is ${pageId}`);
+        return response.text(`Current page ID is ${pageId}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to set current page: ${error}`);
+        return response.error(`Failed to set current page: ${error}`);
     }
 });
 server.tool("get_page", "Get page data in Frame0.", {
@@ -551,11 +552,11 @@ server.tool("get_page", "Get page data in Frame0.", {
             pageId,
             exportShapes,
         });
-        return textResult(`The page data: ${JSON.stringify(filterPage(pageData))}`);
+        return response.text(`The page data: ${JSON.stringify(filterPage(pageData))}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to get page data: ${error}`);
+        return response.error(`Failed to get page data: ${error}`);
     }
 });
 server.tool("get_all_pages", "Get all pages data in Frame0.", {
@@ -573,11 +574,11 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
         if (!Array.isArray(docData.children))
             docData.children = [];
         const pageArray = docData.children.map((page) => filterPage(page));
-        return textResult(`The all pages data: ${JSON.stringify(pageArray)}`);
+        return response.text(`The all pages data: ${JSON.stringify(pageArray)}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to get page data: ${error}`);
+        return response.error(`Failed to get page data: ${error}`);
     }
 });
 server.tool("duplicate_page", "Duplicate a page in Frame0.", {
@@ -593,11 +594,11 @@ server.tool("duplicate_page", "Duplicate a page in Frame0.", {
             pageId: duplicatedPageId,
             exportShapes: true,
         });
-        return textResult(`Duplicated page data: ${JSON.stringify(pageData)}`);
+        return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to duplicate page: ${error}`);
+        return response.error(`Failed to duplicate page: ${error}`);
     }
 });
 server.tool("delete_page", "Delete a page in Frame0.", {
@@ -607,11 +608,33 @@ server.tool("delete_page", "Delete a page in Frame0.", {
         await command(apiPort, "page:delete", {
             pageId,
         });
-        return textResult(`Deleted page ID is${pageId}`);
+        return response.text(`Deleted page ID is${pageId}`);
     }
     catch (error) {
         console.error(error);
-        return textResult(`Failed to delete page: ${error}`);
+        return response.error(`Failed to delete page: ${error}`);
+    }
+});
+server.tool("export_page_as_image", "Export page as image in Frame0.", {
+    pageId: z
+        .string()
+        .optional()
+        .describe("ID of the page to export. If not provided, the current page is used."),
+    format: z
+        .enum(["image/png", "image/jpeg", "image/webp"])
+        .optional()
+        .default("image/png"),
+}, async ({ pageId, format }) => {
+    try {
+        const image = await command(apiPort, "file:export-image", {
+            pageId,
+            format,
+        });
+        return response.image(format, image);
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to export page image: ${error}`);
     }
 });
 async function main() {

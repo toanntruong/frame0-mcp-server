@@ -38,6 +38,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `set_current_page_by_id`
 - `get_page`
 - `get_all_pages`
+- `export_page_as_image`
 
 ## Dev
 
