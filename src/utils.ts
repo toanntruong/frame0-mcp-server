@@ -1,4 +1,3 @@
-import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import fetch from "node-fetch";
 
 const URL = "http://localhost";
@@ -52,17 +51,6 @@ export async function command(port: number, command: string, args: any = {}) {
     throw new Error(`Command failed: ${json.error}`);
   }
   return json.data;
-}
-
-export function textResult(text: string): CallToolResult {
-  return {
-    content: [
-      {
-        type: "text",
-        text,
-      },
-    ],
-  };
 }
 
 export function filterShape(shape: any, recursive: boolean = false): any {

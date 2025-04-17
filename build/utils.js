@@ -43,16 +43,6 @@ export async function command(port, command, args = {}) {
     }
     return json.data;
 }
-export function textResult(text) {
-    return {
-        content: [
-            {
-                type: "text",
-                text,
-            },
-        ],
-    };
-}
 export function filterShape(shape, recursive = false) {
     const json = {
         id: shape.id,

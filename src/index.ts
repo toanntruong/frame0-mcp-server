@@ -652,6 +652,36 @@ server.tool(
 );
 
 server.tool(
+  "export_shape_as_image",
+  "Export shape as image in Frame0.",
+  {
+    shapeId: z.string().describe("ID of the shape to export"),
+    format: z
+      .enum(["image/png", "image/jpeg", "image/webp"])
+      .optional()
+      .default("image/png")
+      .describe("Image format to export."),
+  },
+  async ({ shapeId, format }) => {
+    try {
+      const data = await command(apiPort, "shape:get-shape", {
+        shapeId,
+      });
+      const image = await command(apiPort, "file:export-image", {
+        pageId: data.pageId,
+        shapeIdArray: [shapeId],
+        format,
+        fillBackground: true,
+      });
+      return response.image(format, image);
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to export page image: ${error}`);
+    }
+  }
+);
+
+server.tool(
   "add_page",
   "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.",
   {
@@ -843,13 +873,15 @@ server.tool(
     format: z
       .enum(["image/png", "image/jpeg", "image/webp"])
       .optional()
-      .default("image/png"),
+      .default("image/png")
+      .describe("Image format to export."),
   },
   async ({ pageId, format }) => {
     try {
       const image = await command(apiPort, "file:export-image", {
         pageId,
         format,
+        fillBackground: true,
       });
       return response.image(format, image);
     } catch (error) {

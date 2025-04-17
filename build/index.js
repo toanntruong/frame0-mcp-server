@@ -479,6 +479,31 @@ server.tool("move_shape", "Move a shape in Frame0.", {
         return response.error(`Failed to get available icons: ${error}`);
     }
 });
+server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
+    shapeId: z.string().describe("ID of the shape to export"),
+    format: z
+        .enum(["image/png", "image/jpeg", "image/webp"])
+        .optional()
+        .default("image/png")
+        .describe("Image format to export."),
+}, async ({ shapeId, format }) => {
+    try {
+        const data = await command(apiPort, "shape:get-shape", {
+            shapeId,
+        });
+        const image = await command(apiPort, "file:export-image", {
+            pageId: data.pageId,
+            shapeIdArray: [shapeId],
+            format,
+            fillBackground: true,
+        });
+        return response.image(format, image);
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to export page image: ${error}`);
+    }
+});
 server.tool("add_page", "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.", {
     name: z.string().describe("Name of the page to add."),
 }, async ({ name }) => {
@@ -510,6 +535,40 @@ server.tool("update_page", "Update a page in Frame0.", {
     catch (error) {
         console.error(error);
         return response.error(`Failed to update page: ${error}`);
+    }
+});
+server.tool("duplicate_page", "Duplicate a page in Frame0.", {
+    pageId: z.string().describe("ID of the page to duplicate"),
+    name: z.string().optional().describe("Name of the duplicated page."),
+}, async ({ pageId, name }) => {
+    try {
+        const duplicatedPageId = await command(apiPort, "page:duplicate", {
+            pageId,
+            pageProps: { name },
+        });
+        const pageData = await command(apiPort, "page:get", {
+            pageId: duplicatedPageId,
+            exportShapes: true,
+        });
+        return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to duplicate page: ${error}`);
+    }
+});
+server.tool("delete_page", "Delete a page in Frame0.", {
+    pageId: z.string().describe("ID of the page to delete"),
+}, async ({ pageId }) => {
+    try {
+        await command(apiPort, "page:delete", {
+            pageId,
+        });
+        return response.text(`Deleted page ID is${pageId}`);
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to delete page: ${error}`);
     }
 });
 server.tool("get_current_page_id", "Get ID of the current page in Frame0.", {}, async () => {
@@ -581,40 +640,6 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
         return response.error(`Failed to get page data: ${error}`);
     }
 });
-server.tool("duplicate_page", "Duplicate a page in Frame0.", {
-    pageId: z.string().describe("ID of the page to duplicate"),
-    name: z.string().optional().describe("Name of the duplicated page."),
-}, async ({ pageId, name }) => {
-    try {
-        const duplicatedPageId = await command(apiPort, "page:duplicate", {
-            pageId,
-            pageProps: { name },
-        });
-        const pageData = await command(apiPort, "page:get", {
-            pageId: duplicatedPageId,
-            exportShapes: true,
-        });
-        return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
-    }
-    catch (error) {
-        console.error(error);
-        return response.error(`Failed to duplicate page: ${error}`);
-    }
-});
-server.tool("delete_page", "Delete a page in Frame0.", {
-    pageId: z.string().describe("ID of the page to delete"),
-}, async ({ pageId }) => {
-    try {
-        await command(apiPort, "page:delete", {
-            pageId,
-        });
-        return response.text(`Deleted page ID is${pageId}`);
-    }
-    catch (error) {
-        console.error(error);
-        return response.error(`Failed to delete page: ${error}`);
-    }
-});
 server.tool("export_page_as_image", "Export page as image in Frame0.", {
     pageId: z
         .string()
@@ -623,12 +648,14 @@ server.tool("export_page_as_image", "Export page as image in Frame0.", {
     format: z
         .enum(["image/png", "image/jpeg", "image/webp"])
         .optional()
-        .default("image/png"),
+        .default("image/png")
+        .describe("Image format to export."),
 }, async ({ pageId, format }) => {
     try {
         const image = await command(apiPort, "file:export-image", {
             pageId,
             format,
+            fillBackground: true,
         });
         return response.image(format, image);
     }
