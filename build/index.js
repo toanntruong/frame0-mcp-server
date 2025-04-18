@@ -5,7 +5,8 @@ import { z } from "zod";
 import * as response from "./response.js";
 import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
-import packageJson from "../package.json" with { type: "json" };
+const NAME = "frame0-mcp-server";
+const VERSION = "0.9.2";
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
 // command line argument parsing
@@ -26,8 +27,8 @@ if (apiPortArg) {
 }
 // Create an MCP server
 const server = new McpServer({
-    name: packageJson.name,
-    version: packageJson.version,
+    name: NAME,
+    version: VERSION,
 });
 server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page before you create a new frame.", {
     frameType: z
