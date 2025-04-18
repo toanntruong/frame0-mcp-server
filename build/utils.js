@@ -35,7 +35,7 @@ export async function command(port, command, args = {}) {
         }),
     });
     if (!res.ok) {
-        throw new Error(`Failed to execute command(${command}) with args`, args);
+        throw new Error(`Failed to execute command(${command}) with args: ${args}`);
     }
     const json = (await res.json());
     if (!json.success) {
