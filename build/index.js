@@ -1,9 +1,11 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as response from "./response.js";
 import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
 // command line argument parsing
@@ -24,10 +26,10 @@ if (apiPortArg) {
 }
 // Create an MCP server
 const server = new McpServer({
-    name: "frame0-mcp-server",
-    version: "1.0.0",
+    name: packageJson.name,
+    version: packageJson.version,
 });
-server.tool("create_frame", "Create a frame shape in Frame0.", {
+server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page before you create a new frame.", {
     frameType: z
         .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
         .describe("Type of the frame shape to create."),
@@ -98,7 +100,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     left: z
         .number()
         .describe("Left position of the rectangle shape in the absolute coordinate system."),
@@ -151,7 +153,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     left: z
         .number()
         .describe("Left position of the ellipse shape in the absolute coordinate system."),
@@ -202,7 +204,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     left: z
         .number()
         .describe("Left position of the text shape in the absolute coordinate system. Position need to be adjusted using 'move_shape' tool based on the width and height of the created text."),
@@ -253,7 +255,7 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     points: z
         .array(z.tuple([z.number(), z.number()]))
         .min(2)
@@ -307,7 +309,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     left: z
         .number()
         .describe("Left position of the icon shape in the absolute coordinate system."),
@@ -355,7 +357,7 @@ server.tool("create_image", "Create an image shape in Frame0.", {
     parentId: z
         .string()
         .optional()
-        .describe("ID of the parent shape. Typically frame ID or container's ID."),
+        .describe("ID of the parent shape. Typically frame ID."),
     mimeType: z
         .enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
         .describe("MIME type of the image."),
@@ -536,7 +538,7 @@ server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
         return response.error(`Failed to export page image: ${error}`);
     }
 });
-server.tool("add_page", "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.", {
+server.tool("add_page", "Add a new page in Frame0. The added page becomes the current page.", {
     name: z.string().describe("Name of the page to add."),
 }, async ({ name }) => {
     try {

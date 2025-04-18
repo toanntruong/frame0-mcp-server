@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -10,6 +11,7 @@ import {
   filterShape,
 } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 
 // port number for the Frame0's API server (default: 58320)
 let apiPort: number = 58320;
@@ -32,13 +34,13 @@ if (apiPortArg) {
 
 // Create an MCP server
 const server = new McpServer({
-  name: "frame0-mcp-server",
-  version: "1.0.0",
+  name: packageJson.name,
+  version: packageJson.version,
 });
 
 server.tool(
   "create_frame",
-  "Create a frame shape in Frame0.",
+  "Create a frame shape in Frame0. Must add a new page before you create a new frame.",
   {
     frameType: z
       .enum(["phone", "tablet", "desktop", "browser", "watch", "tv"])
@@ -121,9 +123,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     left: z
       .number()
       .describe(
@@ -199,9 +199,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     left: z
       .number()
       .describe(
@@ -274,9 +272,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     left: z
       .number()
       .describe(
@@ -352,9 +348,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     points: z
       .array(z.tuple([z.number(), z.number()]))
       .min(2)
@@ -427,9 +421,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     left: z
       .number()
       .describe(
@@ -490,9 +482,7 @@ server.tool(
     parentId: z
       .string()
       .optional()
-      .describe(
-        "ID of the parent shape. Typically frame ID or container's ID."
-      ),
+      .describe("ID of the parent shape. Typically frame ID."),
     mimeType: z
       .enum(["image/png", "image/jpeg", "image/webp", "image/svg+xml"])
       .describe("MIME type of the image."),
@@ -734,7 +724,7 @@ server.tool(
 
 server.tool(
   "add_page",
-  "Add a new page in Frame0. Must add a new page first when you create a new frame. The added page becomes the current page.",
+  "Add a new page in Frame0. The added page becomes the current page.",
   {
     name: z.string().describe("Name of the page to add."),
   },
