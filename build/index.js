@@ -6,7 +6,7 @@ import * as response from "./response.js";
 import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.2";
+const VERSION = "0.9.3";
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
 // command line argument parsing

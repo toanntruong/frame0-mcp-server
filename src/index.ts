@@ -13,7 +13,7 @@ import {
 import { colors, convertColor } from "./colors.js";
 
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.2";
+const VERSION = "0.9.3";
 
 // port number for the Frame0's API server (default: 58320)
 let apiPort: number = 58320;
