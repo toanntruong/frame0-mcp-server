@@ -514,6 +514,36 @@ server.tool("move_shape", "Move a shape in Frame0.", {
         return response.error(`Failed to get available icons: ${error}`);
     }
 });
+server.tool("set_link", "Set a link from a shape to a URL or a page.", {
+    shapeId: z.string().describe("ID of the shape to set link"),
+    linkType: z
+        .enum(["none", "web", "page", "action:backward"])
+        .describe("Type of the link to set."),
+    url: z
+        .string()
+        .optional()
+        .describe("URL to set. Required if linkType is 'web'."),
+    pageId: z
+        .string()
+        .optional()
+        .describe("ID of the page to set. Required if linkType is 'page'."),
+}, async ({ shapeId, linkType, url, pageId }) => {
+    try {
+        await command(apiPort, "shape:set-link", {
+            shapeId,
+            linkProps: {
+                linkType,
+                url,
+                pageId,
+            },
+        });
+        return response.text(`A link is assigned to shape (id: ${shapeId})`);
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to set link: ${error}`);
+    }
+});
 server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
     shapeId: z.string().describe("ID of the shape to export"),
     format: z
