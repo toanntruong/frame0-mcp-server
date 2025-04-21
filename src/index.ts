@@ -755,6 +755,56 @@ server.tool(
 );
 
 server.tool(
+  "group",
+  "Group shapes in Frame0.",
+  {
+    shapeIdArray: z.array(z.string()).describe("Array of shape IDs to group"),
+    parentId: z
+      .string()
+      .optional()
+      .describe(
+        "ID of the parent shape where the group will be added. If not provided, the group will be added to the current page."
+      ),
+  },
+  async ({ shapeIdArray, parentId }) => {
+    try {
+      const groupId = await command(apiPort, "shape:group", {
+        shapeIdArray,
+        parentId,
+      });
+      const data = await command(apiPort, "shape:get-shape", {
+        shapeId: groupId,
+      });
+      return response.text(
+        "Created roup: " + JSON.stringify(filterShape(data))
+      );
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to get available icons: ${error}`);
+    }
+  }
+);
+
+server.tool(
+  "ungroup",
+  "Ungroup a group in Frame0.",
+  {
+    groupId: z.string().describe("ID of the group to ungroup"),
+  },
+  async ({ groupId }) => {
+    try {
+      await command(apiPort, "shape:ungroup", {
+        shapeIdArray: [groupId],
+      });
+      return response.text("Deleted group of id: " + groupId);
+    } catch (error) {
+      console.error(error);
+      return response.error(`Failed to get available icons: ${error}`);
+    }
+  }
+);
+
+server.tool(
   "set_link",
   "Set a link from a shape to a URL or a page.",
   {

@@ -24,6 +24,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `create_ellipse`
 - `create_text`
 - `create_line`
+- `create_connector`
 - `create_icon`
 - `create_image`
 - `update_shape`
@@ -31,6 +32,8 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `delete_shape`
 - `get_available_icons`
 - `move_shape`
+- `group`
+- `ungroup`
 - `set_link`
 - `export_shape_as_image`
 - `add_page`
