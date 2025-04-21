@@ -559,6 +559,44 @@ server.tool("move_shape", "Move a shape in Frame0.", {
         return response.error(`Failed to get available icons: ${error}`);
     }
 });
+server.tool("align_shapes", "Align shapes in Frame0.", {
+    alignType: z
+        .enum([
+        "bring-to-front",
+        "send-to-back",
+        "align-left",
+        "align-right",
+        "align-horizontal-center",
+        "align-top",
+        "align-bottom",
+        "align-vertical-center",
+        "distribute-horizontally",
+        "distribute-vertically",
+    ])
+        .describe("Type of the alignment to apply."),
+    shapeIdArray: z.array(z.string()).describe("Array of shape IDs to align"),
+}, async ({ alignType, shapeIdArray }) => {
+    const COMMAND = {
+        "bring-to-front": "align:bring-to-front",
+        "send-to-back": "align:send-to-back",
+        "align-left": "align:align-left",
+        "align-right": "align:align-right",
+        "align-horizontal-center": "align:align-center",
+        "align-top": "align:align-top",
+        "align-bottom": "align:align-bottom",
+        "align-vertical-center": "align:align-middle",
+        "distribute-horizontally": "align:horizontal-distribute",
+        "distribute-vertically": "align:vertical-distribute",
+    };
+    try {
+        await command(apiPort, COMMAND[alignType], { shapeIdArray });
+        return response.text("Shapes are aligned.");
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to get available icons: ${error}`);
+    }
+});
 server.tool("group", "Group shapes in Frame0.", {
     shapeIdArray: z.array(z.string()).describe("Array of shape IDs to group"),
     parentId: z
@@ -595,7 +633,7 @@ server.tool("ungroup", "Ungroup a group in Frame0.", {
         return response.error(`Failed to get available icons: ${error}`);
     }
 });
-server.tool("set_link", "Set a link from a shape to a URL or a page.", {
+server.tool("set_link", "Set a link from a shape to a URL or a page in Frame0.", {
     shapeId: z.string().describe("ID of the shape to set link"),
     linkType: z
         .enum(["none", "web", "page", "action:backward"])

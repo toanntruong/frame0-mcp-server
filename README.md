@@ -32,6 +32,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `delete_shape`
 - `get_available_icons`
 - `move_shape`
+- `align_shapes`
 - `group`
 - `ungroup`
 - `set_link`
