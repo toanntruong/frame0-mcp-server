@@ -303,6 +303,51 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         return response.error(`Failed to create line: ${error}`);
     }
 });
+server.tool("create_connector", "Create a connector shape in Frame0.", {
+    name: z.string().describe("Name of the line shape."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("ID of the parent shape. Typically frame ID."),
+    startId: z.string().describe("ID of the start shape."),
+    endId: z.string().describe("ID of the end shape."),
+    startArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("Start arrowhead of the line shape."),
+    endArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("End arrowhead of the line shape."),
+    strokeColor: z
+        .enum(colors)
+        .optional()
+        .describe("Stroke color of the line. shape"),
+}, async ({ name, parentId, startId, endId, startArrowhead, endArrowhead, strokeColor, }) => {
+    try {
+        const shapeId = await command(apiPort, "shape:create-connector", {
+            tailId: startId,
+            headId: endId,
+            shapeProps: {
+                name,
+                tailEndType: convertArrowhead(startArrowhead),
+                headEndType: convertArrowhead(endArrowhead),
+                strokeColor: convertColor(strokeColor),
+            },
+            parentId,
+        });
+        const data = await command(apiPort, "shape:get-shape", {
+            shapeId,
+        });
+        return response.text("Created connector: " + JSON.stringify(filterShape(data)));
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(`Failed to create connector: ${error}`);
+    }
+});
 server.tool("create_icon", "Create an icon shape in Frame0.", {
     name: z
         .string()
