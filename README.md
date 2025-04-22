@@ -1,3 +1,5 @@
+<video src="https://frame0.app/videos/frame0-mcp-example.mp4" controls></video>
+
 # Frame0 MCP Server
 
 Require [Frame0](https://frame0.app/) `v1.0.0-beta.17` or higher.
