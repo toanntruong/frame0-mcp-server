@@ -2,9 +2,13 @@
 
 # Frame0 MCP Server
 
-Require [Frame0](https://frame0.app/) `v1.0.0-beta.17` or higher.
+[Frame0](https://frame0.app/) is a Balsamiq-alternative wireframe tool for modern apps. **Frame0 MCP Server** allows you for creating and modifying wireframes in Frame0 by prompting.
 
 ## Setup
+
+Prerequisite:
+- [Frame0](https://frame0.app/) `v1.0.0-beta.17` or higher.
+- [Node.js](https://nodejs.org/) `v22` or higher.
 
 Setup for Claude Desktop in `claude_desktop_config.json` as below:
 
@@ -20,6 +24,16 @@ Setup for Claude Desktop in `claude_desktop_config.json` as below:
 ```
 
 You can use `--api-port=<port>` optional parameter to use another port number for Frame0's API server.
+
+## Example Prompts
+
+- _“Create a login screen for Phone in Frame0”_
+- _“Create a Instagram home screen for Phone in Frame0”_
+- _“Create a Netflix home screen for TV in Frame0”_
+- _“Change the color of the Login button”_
+- _“Remove the Twitter social login”_
+- _“Replace the emojis by icons”_
+- _“Set a link from the google login button to the Google website”_
 
 ## Tools
 
