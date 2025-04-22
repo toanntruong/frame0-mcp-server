@@ -1,5 +1,7 @@
 # Frame0 MCP Server
 
+Require Frame0 `v1.0.0-beta.17` or higher.
+
 ## Setup
 
 Setup for Claude Desktop in `claude_desktop_config.json` as below:
