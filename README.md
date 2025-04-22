@@ -1,6 +1,6 @@
 # Frame0 MCP Server
 
-Require Frame0 `v1.0.0-beta.17` or higher.
+Require [Frame0](https://frame0.app/) `v1.0.0-beta.17` or higher.
 
 ## Setup
 
