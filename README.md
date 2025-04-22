@@ -1,4 +1,4 @@
-<video src="https://frame0.app/videos/frame0-mcp-example.mp4" controls></video>
+[![Frame0 MCP Video Example](https://github.com/niklauslee/frame0-mcp-server/raw/main/thumbnail.png)](https://frame0.app/videos/frame0-mcp-example.mp4)
 
 # Frame0 MCP Server
 
