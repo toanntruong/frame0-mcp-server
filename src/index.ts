@@ -355,6 +355,7 @@ server.tool(
   }
 );
 
+// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool(
   "create_line",
   "Create a polyline shape in Frame0.",
@@ -365,26 +366,36 @@ server.tool(
       .optional()
       .describe("ID of the parent shape. Typically frame ID."),
     points: z
-      .string()
+      .array(z.tuple([z.number(), z.number()]))
+      .min(2)
       .describe(
-        "JSON string representing an array of points (e.g., \"[[10,10],[20,20]]\"). At least 2 points are required. If first point and last point are the same, it will be a polygon."
+        "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
       ),
+    // points: z
+    //   .string()
+    //   .describe(
+    //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
+    //   ),
     startArrowhead: z
-      .string()
+      .enum(ARROWHEADS)
       .optional()
-      .describe("Start arrowhead of the line shape. (e.g., none, arrow) - temp string type"),
+      .describe("Start arrowhead of the line shape."),
     endArrowhead: z
-      .string()
+      .enum(ARROWHEADS)
       .optional()
-      .describe("End arrowhead of the line shape. (e.g., none, arrow) - temp string type"),
+      .describe("End arrowhead of the line shape."),
     fillColor: z
       .string()
       .optional()
-      .describe("Fill color of the line shape. (e.g., red, blue) - temp string type"),
+      .describe(
+        "Fill color of the line shape. (e.g., red, blue) - temp string type"
+      ),
     strokeColor: z
       .string()
       .optional()
-      .describe("Stroke color of the line shape. (e.g., black) - temp string type"),
+      .describe(
+        "Stroke color of the line shape. (e.g., black) - temp string type"
+      ),
   },
   async ({
     name,
@@ -396,15 +407,30 @@ server.tool(
     strokeColor,
   }) => {
     try {
-      let parsedPoints;
-      try {
-        parsedPoints = JSON.parse(points);
-        if (!Array.isArray(parsedPoints) || parsedPoints.length < 2 || !parsedPoints.every(p => Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number')) {
-          throw new Error("Points must be an array of at least two [number, number] tuples.");
-        }
-      } catch (e) {
-        return response.error(JsonRpcErrorCode.InvalidParams, `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`);
-      }
+      let parsedPoints = points;
+      // try {
+      //   parsedPoints = JSON.parse(points);
+      //   if (
+      //     !Array.isArray(parsedPoints) ||
+      //     parsedPoints.length < 2 ||
+      //     !parsedPoints.every(
+      //       (p) =>
+      //         Array.isArray(p) &&
+      //         p.length === 2 &&
+      //         typeof p[0] === "number" &&
+      //         typeof p[1] === "number"
+      //     )
+      //   ) {
+      //     throw new Error(
+      //       "Points must be an array of at least two [number, number] tuples."
+      //     );
+      //   }
+      // } catch (e) {
+      //   return response.error(
+      //     JsonRpcErrorCode.InvalidParams,
+      //     `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`
+      //   );
+      // }
 
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
@@ -413,8 +439,8 @@ server.tool(
           path: parsedPoints,
           tailEndType: convertArrowhead(startArrowhead || "none"),
           headEndType: convertArrowhead(endArrowhead || "none"),
-          fillColor: convertColor(fillColor || "transparent"),
-          strokeColor: convertColor(strokeColor || "black"),
+          fillColor: convertColor(fillColor || "$background"),
+          strokeColor: convertColor(strokeColor || "$foreground"),
         },
         parentId,
       });
@@ -475,9 +501,9 @@ server.tool(
         headId: endId,
         shapeProps: {
           name,
-          tailEndType: convertArrowhead(startArrowhead),
-          headEndType: convertArrowhead(endArrowhead),
-          strokeColor: convertColor(strokeColor),
+          tailEndType: convertArrowhead(startArrowhead || "none"),
+          headEndType: convertArrowhead(endArrowhead || "none"),
+          strokeColor: convertColor(strokeColor || "$foreground"),
         },
         parentId,
       });
@@ -764,7 +790,9 @@ server.tool(
     search: z
       .string()
       .optional()
-      .describe("Search term to filter icon by name or tags (case-insensitive)"),
+      .describe(
+        "Search term to filter icon by name or tags (case-insensitive)"
+      ),
   },
   async ({ search }) => {
     try {
@@ -772,13 +800,19 @@ server.tool(
       const icons = Array.isArray(data) ? data : [];
       const filtered = search
         ? icons.filter((icon: { name: string; tags: string[] }) => {
-            if (typeof icon !== "object" || !icon.name || !Array.isArray(icon.tags)) {
+            if (
+              typeof icon !== "object" ||
+              !icon.name ||
+              !Array.isArray(icon.tags)
+            ) {
               return false;
             }
             const searchLower = search.toLowerCase();
             return (
               icon.name.toLowerCase().includes(searchLower) ||
-              icon.tags.some((tag: string) => tag.toLowerCase().includes(searchLower))
+              icon.tags.some((tag: string) =>
+                tag.toLowerCase().includes(searchLower)
+              )
             );
           })
         : icons;
