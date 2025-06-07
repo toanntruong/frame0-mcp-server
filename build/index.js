@@ -6,8 +6,9 @@ import * as response from "./response.js";
 import { JsonRpcErrorCode } from "./response.js";
 import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.3";
+const VERSION = packageJson.version;
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
 // command line argument parsing
@@ -252,6 +253,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
         return response.error(JsonRpcErrorCode.InternalError, `Failed to create text: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
+// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool("create_line", "Create a polyline shape in Frame0.", {
     name: z.string().describe("Name of the line shape."),
     parentId: z
@@ -259,16 +261,22 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         .optional()
         .describe("ID of the parent shape. Typically frame ID."),
     points: z
-        .string()
-        .describe("JSON string representing an array of points (e.g., \"[[10,10],[20,20]]\"). At least 2 points are required. If first point and last point are the same, it will be a polygon."),
+        .array(z.tuple([z.number(), z.number()]))
+        .min(2)
+        .describe("Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."),
+    // points: z
+    //   .string()
+    //   .describe(
+    //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
+    //   ),
     startArrowhead: z
-        .string()
+        .enum(ARROWHEADS)
         .optional()
-        .describe("Start arrowhead of the line shape. (e.g., none, arrow) - temp string type"),
+        .describe("Start arrowhead of the line shape."),
     endArrowhead: z
-        .string()
+        .enum(ARROWHEADS)
         .optional()
-        .describe("End arrowhead of the line shape. (e.g., none, arrow) - temp string type"),
+        .describe("End arrowhead of the line shape."),
     fillColor: z
         .string()
         .optional()
@@ -279,16 +287,30 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         .describe("Stroke color of the line shape. (e.g., black) - temp string type"),
 }, async ({ name, parentId, points, startArrowhead, endArrowhead, fillColor, strokeColor, }) => {
     try {
-        let parsedPoints;
-        try {
-            parsedPoints = JSON.parse(points);
-            if (!Array.isArray(parsedPoints) || parsedPoints.length < 2 || !parsedPoints.every(p => Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number')) {
-                throw new Error("Points must be an array of at least two [number, number] tuples.");
-            }
-        }
-        catch (e) {
-            return response.error(JsonRpcErrorCode.InvalidParams, `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`);
-        }
+        let parsedPoints = points;
+        // try {
+        //   parsedPoints = JSON.parse(points);
+        //   if (
+        //     !Array.isArray(parsedPoints) ||
+        //     parsedPoints.length < 2 ||
+        //     !parsedPoints.every(
+        //       (p) =>
+        //         Array.isArray(p) &&
+        //         p.length === 2 &&
+        //         typeof p[0] === "number" &&
+        //         typeof p[1] === "number"
+        //     )
+        //   ) {
+        //     throw new Error(
+        //       "Points must be an array of at least two [number, number] tuples."
+        //     );
+        //   }
+        // } catch (e) {
+        //   return response.error(
+        //     JsonRpcErrorCode.InvalidParams,
+        //     `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`
+        //   );
+        // }
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: {
@@ -296,8 +318,8 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
                 path: parsedPoints,
                 tailEndType: convertArrowhead(startArrowhead || "none"),
                 headEndType: convertArrowhead(endArrowhead || "none"),
-                fillColor: convertColor(fillColor || "transparent"),
-                strokeColor: convertColor(strokeColor || "black"),
+                fillColor: convertColor(fillColor || "$background"),
+                strokeColor: convertColor(strokeColor || "$foreground"),
             },
             parentId,
         });
@@ -340,9 +362,9 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
             headId: endId,
             shapeProps: {
                 name,
-                tailEndType: convertArrowhead(startArrowhead),
-                headEndType: convertArrowhead(endArrowhead),
-                strokeColor: convertColor(strokeColor),
+                tailEndType: convertArrowhead(startArrowhead || "none"),
+                headEndType: convertArrowhead(endArrowhead || "none"),
+                strokeColor: convertColor(strokeColor || "$foreground"),
             },
             parentId,
         });
@@ -550,7 +572,9 @@ server.tool("get_available_icons", "Get available icon shapes in Frame0.", {
         const icons = Array.isArray(data) ? data : [];
         const filtered = search
             ? icons.filter((icon) => {
-                if (typeof icon !== "object" || !icon.name || !Array.isArray(icon.tags)) {
+                if (typeof icon !== "object" ||
+                    !icon.name ||
+                    !Array.isArray(icon.tags)) {
                     return false;
                 }
                 const searchLower = search.toLowerCase();

@@ -12,9 +12,10 @@ import {
   filterShape,
 } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.3";
+const VERSION = packageJson.version;
 
 // port number for the Frame0's API server (default: 58320)
 let apiPort: number = 58320;
