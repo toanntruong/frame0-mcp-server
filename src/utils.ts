@@ -24,7 +24,7 @@ export const ARROWHEADS = [
   "square",
   "triangle",
   "triangle-filled",
-];
+] as const;
 
 type CommandResponse = {
   success: boolean;

@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as response from "./response.js";
+import { JsonRpcErrorCode } from "./response.js";
 import {
   ARROWHEADS,
   convertArrowhead,
@@ -11,9 +12,10 @@ import {
   filterShape,
 } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.3";
+const VERSION = packageJson.version;
 
 // port number for the Frame0's API server (default: 58320)
 let apiPort: number = 58320;
@@ -112,7 +114,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create frame: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create frame: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -188,7 +193,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create rectangle: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create rectangle: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -255,7 +263,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create ellipse: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create ellipse: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -337,11 +348,15 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create text: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create text: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
 
+// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool(
   "create_line",
   "Create a polyline shape in Frame0.",
@@ -357,24 +372,31 @@ server.tool(
       .describe(
         "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
       ),
+    // points: z
+    //   .string()
+    //   .describe(
+    //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
+    //   ),
     startArrowhead: z
-      .enum(ARROWHEADS as any)
+      .enum(ARROWHEADS)
       .optional()
-      .default("none")
       .describe("Start arrowhead of the line shape."),
     endArrowhead: z
-      .enum(ARROWHEADS as any)
+      .enum(ARROWHEADS)
       .optional()
-      .default("none")
       .describe("End arrowhead of the line shape."),
     fillColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Fill color of the line shape."),
+      .describe(
+        "Fill color of the line shape. (e.g., red, blue) - temp string type"
+      ),
     strokeColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Stroke color of the line. shape"),
+      .describe(
+        "Stroke color of the line shape. (e.g., black) - temp string type"
+      ),
   },
   async ({
     name,
@@ -386,15 +408,40 @@ server.tool(
     strokeColor,
   }) => {
     try {
+      let parsedPoints = points;
+      // try {
+      //   parsedPoints = JSON.parse(points);
+      //   if (
+      //     !Array.isArray(parsedPoints) ||
+      //     parsedPoints.length < 2 ||
+      //     !parsedPoints.every(
+      //       (p) =>
+      //         Array.isArray(p) &&
+      //         p.length === 2 &&
+      //         typeof p[0] === "number" &&
+      //         typeof p[1] === "number"
+      //     )
+      //   ) {
+      //     throw new Error(
+      //       "Points must be an array of at least two [number, number] tuples."
+      //     );
+      //   }
+      // } catch (e) {
+      //   return response.error(
+      //     JsonRpcErrorCode.InvalidParams,
+      //     `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`
+      //   );
+      // }
+
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
         shapeProps: {
           name,
-          path: points,
-          tailEndType: convertArrowhead(startArrowhead),
-          headEndType: convertArrowhead(endArrowhead),
-          fillColor: convertColor(fillColor),
-          strokeColor: convertColor(strokeColor),
+          path: parsedPoints,
+          tailEndType: convertArrowhead(startArrowhead || "none"),
+          headEndType: convertArrowhead(endArrowhead || "none"),
+          fillColor: convertColor(fillColor || "$background"),
+          strokeColor: convertColor(strokeColor || "$foreground"),
         },
         parentId,
       });
@@ -406,7 +453,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create line: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create line: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -423,12 +473,12 @@ server.tool(
     startId: z.string().describe("ID of the start shape."),
     endId: z.string().describe("ID of the end shape."),
     startArrowhead: z
-      .enum(ARROWHEADS as any)
+      .enum(ARROWHEADS)
       .optional()
       .default("none")
       .describe("Start arrowhead of the line shape."),
     endArrowhead: z
-      .enum(ARROWHEADS as any)
+      .enum(ARROWHEADS)
       .optional()
       .default("none")
       .describe("End arrowhead of the line shape."),
@@ -452,9 +502,9 @@ server.tool(
         headId: endId,
         shapeProps: {
           name,
-          tailEndType: convertArrowhead(startArrowhead),
-          headEndType: convertArrowhead(endArrowhead),
-          strokeColor: convertColor(strokeColor),
+          tailEndType: convertArrowhead(startArrowhead || "none"),
+          headEndType: convertArrowhead(endArrowhead || "none"),
+          strokeColor: convertColor(strokeColor || "$foreground"),
         },
         parentId,
       });
@@ -466,7 +516,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create connector: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -531,7 +584,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create icon: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create icon: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -580,7 +636,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to create image: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to create image: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -652,7 +711,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to update shape: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to update shape: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -694,7 +756,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to duplicate shape: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to duplicate shape: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -711,7 +776,10 @@ server.tool(
       return response.text("Deleted shape of id: " + shapeId);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to delete shape: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to delete shape: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -719,14 +787,43 @@ server.tool(
 server.tool(
   "get_available_icons",
   "Get available icon shapes in Frame0.",
-  {},
-  async ({}) => {
+  {
+    search: z
+      .string()
+      .optional()
+      .describe(
+        "Search term to filter icon by name or tags (case-insensitive)"
+      ),
+  },
+  async ({ search }) => {
     try {
       const data = await command(apiPort, "shape:get-available-icons", {});
-      return response.text("Available icons: " + JSON.stringify(data));
+      const icons = Array.isArray(data) ? data : [];
+      const filtered = search
+        ? icons.filter((icon: { name: string; tags: string[] }) => {
+            if (
+              typeof icon !== "object" ||
+              !icon.name ||
+              !Array.isArray(icon.tags)
+            ) {
+              return false;
+            }
+            const searchLower = search.toLowerCase();
+            return (
+              icon.name.toLowerCase().includes(searchLower) ||
+              icon.tags.some((tag: string) =>
+                tag.toLowerCase().includes(searchLower)
+              )
+            );
+          })
+        : icons;
+      return response.text("Available icons: " + JSON.stringify(filtered));
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get available icons: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to get available icons: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -749,7 +846,10 @@ server.tool(
       return response.text(`Moved shape (id: ${shapeId}) as (${dx}, ${dy})`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get available icons: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to move shape: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -792,7 +892,10 @@ server.tool(
       return response.text("Shapes are aligned.");
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get available icons: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to align shapes: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -823,7 +926,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get available icons: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to group shapes: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -842,7 +948,10 @@ server.tool(
       return response.text("Deleted group of id: " + groupId);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get available icons: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to ungroup shapes: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -877,7 +986,10 @@ server.tool(
       return response.text(`A link is assigned to shape (id: ${shapeId})`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to set link: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to set link: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -907,7 +1019,10 @@ server.tool(
       return response.image(format, image);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to export page image: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to export shape as image: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -926,7 +1041,10 @@ server.tool(
       return response.text(`Added page: ${JSON.stringify(pageData)}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to add new page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to add page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -950,7 +1068,10 @@ server.tool(
       return response.text(`Updated page: ${JSON.stringify(pageData)}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to update page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to update page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -975,7 +1096,10 @@ server.tool(
       return response.text(`Duplicated page data: ${JSON.stringify(pageData)}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to duplicate page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to duplicate page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -994,7 +1118,10 @@ server.tool(
       return response.text(`Deleted page ID is${pageId}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to delete page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to delete page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -1009,7 +1136,10 @@ server.tool(
       return response.text(`Current page ID is ${pageId},`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get current page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to get current page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -1028,7 +1158,10 @@ server.tool(
       return response.text(`Current page ID is ${pageId}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to set current page: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to set current page: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -1060,7 +1193,10 @@ server.tool(
       );
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get page data: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to get page data: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -1086,7 +1222,10 @@ server.tool(
       return response.text(`The all pages data: ${JSON.stringify(pageArray)}`);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to get page data: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to get page data: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );
@@ -1117,7 +1256,10 @@ server.tool(
       return response.image(format, image);
     } catch (error) {
       console.error(error);
-      return response.error(`Failed to export page image: ${error}`);
+      return response.error(
+        JsonRpcErrorCode.InternalError,
+        `Failed to export page as image: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 );

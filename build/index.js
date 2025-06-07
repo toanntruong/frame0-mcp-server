@@ -3,10 +3,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as response from "./response.js";
+import { JsonRpcErrorCode } from "./response.js";
 import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import { colors, convertColor } from "./colors.js";
+import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
-const VERSION = "0.9.3";
+const VERSION = packageJson.version;
 // port number for the Frame0's API server (default: 58320)
 let apiPort = 58320;
 // command line argument parsing
@@ -93,7 +95,7 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create frame: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create frame: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
@@ -146,7 +148,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create rectangle: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create rectangle: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
@@ -193,7 +195,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create ellipse: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create ellipse: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_text", "Create a text shape in Frame0.", {
@@ -248,9 +250,10 @@ server.tool("create_text", "Create a text shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create text: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create text: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
+// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool("create_line", "Create a polyline shape in Frame0.", {
     name: z.string().describe("Name of the line shape."),
     parentId: z
@@ -261,35 +264,62 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
         .array(z.tuple([z.number(), z.number()]))
         .min(2)
         .describe("Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."),
+    // points: z
+    //   .string()
+    //   .describe(
+    //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
+    //   ),
     startArrowhead: z
         .enum(ARROWHEADS)
         .optional()
-        .default("none")
         .describe("Start arrowhead of the line shape."),
     endArrowhead: z
         .enum(ARROWHEADS)
         .optional()
-        .default("none")
         .describe("End arrowhead of the line shape."),
     fillColor: z
-        .enum(colors)
+        .string()
         .optional()
-        .describe("Fill color of the line shape."),
+        .describe("Fill color of the line shape. (e.g., red, blue) - temp string type"),
     strokeColor: z
-        .enum(colors)
+        .string()
         .optional()
-        .describe("Stroke color of the line. shape"),
+        .describe("Stroke color of the line shape. (e.g., black) - temp string type"),
 }, async ({ name, parentId, points, startArrowhead, endArrowhead, fillColor, strokeColor, }) => {
     try {
+        let parsedPoints = points;
+        // try {
+        //   parsedPoints = JSON.parse(points);
+        //   if (
+        //     !Array.isArray(parsedPoints) ||
+        //     parsedPoints.length < 2 ||
+        //     !parsedPoints.every(
+        //       (p) =>
+        //         Array.isArray(p) &&
+        //         p.length === 2 &&
+        //         typeof p[0] === "number" &&
+        //         typeof p[1] === "number"
+        //     )
+        //   ) {
+        //     throw new Error(
+        //       "Points must be an array of at least two [number, number] tuples."
+        //     );
+        //   }
+        // } catch (e) {
+        //   return response.error(
+        //     JsonRpcErrorCode.InvalidParams,
+        //     `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`
+        //   );
+        // }
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: {
                 name,
-                path: points,
-                tailEndType: convertArrowhead(startArrowhead),
-                headEndType: convertArrowhead(endArrowhead),
-                fillColor: convertColor(fillColor),
-                strokeColor: convertColor(strokeColor),
+                path: parsedPoints,
+                tailEndType: convertArrowhead(startArrowhead || "none"),
+                headEndType: convertArrowhead(endArrowhead || "none"),
+                fillColor: convertColor(fillColor || "$background"),
+                strokeColor: convertColor(strokeColor || "$foreground"),
             },
             parentId,
         });
@@ -300,7 +330,7 @@ server.tool("create_line", "Create a polyline shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create line: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create line: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_connector", "Create a connector shape in Frame0.", {
@@ -332,9 +362,9 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
             headId: endId,
             shapeProps: {
                 name,
-                tailEndType: convertArrowhead(startArrowhead),
-                headEndType: convertArrowhead(endArrowhead),
-                strokeColor: convertColor(strokeColor),
+                tailEndType: convertArrowhead(startArrowhead || "none"),
+                headEndType: convertArrowhead(endArrowhead || "none"),
+                strokeColor: convertColor(strokeColor || "$foreground"),
             },
             parentId,
         });
@@ -345,7 +375,7 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create connector: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_icon", "Create an icon shape in Frame0.", {
@@ -395,7 +425,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create icon: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create icon: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("create_image", "Create an image shape in Frame0.", {
@@ -433,7 +463,7 @@ server.tool("create_image", "Create an image shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to create image: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create image: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("update_shape", "Update properties of a shape in Frame0.", {
@@ -483,7 +513,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to update shape: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to update shape: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
@@ -516,7 +546,7 @@ server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to duplicate shape: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to duplicate shape: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("delete_shape", "Delete a shape in Frame0.", { shapeId: z.string().describe("ID of the shape to delete") }, async ({ shapeId }) => {
@@ -528,17 +558,35 @@ server.tool("delete_shape", "Delete a shape in Frame0.", { shapeId: z.string().d
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to delete shape: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to delete shape: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
-server.tool("get_available_icons", "Get available icon shapes in Frame0.", {}, async ({}) => {
+server.tool("get_available_icons", "Get available icon shapes in Frame0.", {
+    search: z
+        .string()
+        .optional()
+        .describe("Search term to filter icon by name or tags (case-insensitive)"),
+}, async ({ search }) => {
     try {
         const data = await command(apiPort, "shape:get-available-icons", {});
-        return response.text("Available icons: " + JSON.stringify(data));
+        const icons = Array.isArray(data) ? data : [];
+        const filtered = search
+            ? icons.filter((icon) => {
+                if (typeof icon !== "object" ||
+                    !icon.name ||
+                    !Array.isArray(icon.tags)) {
+                    return false;
+                }
+                const searchLower = search.toLowerCase();
+                return (icon.name.toLowerCase().includes(searchLower) ||
+                    icon.tags.some((tag) => tag.toLowerCase().includes(searchLower)));
+            })
+            : icons;
+        return response.text("Available icons: " + JSON.stringify(filtered));
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get available icons: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to get available icons: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("move_shape", "Move a shape in Frame0.", {
@@ -556,7 +604,7 @@ server.tool("move_shape", "Move a shape in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get available icons: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to move shape: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("align_shapes", "Align shapes in Frame0.", {
@@ -594,7 +642,7 @@ server.tool("align_shapes", "Align shapes in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get available icons: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to align shapes: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("group", "Group shapes in Frame0.", {
@@ -616,7 +664,7 @@ server.tool("group", "Group shapes in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get available icons: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to group shapes: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("ungroup", "Ungroup a group in Frame0.", {
@@ -630,7 +678,7 @@ server.tool("ungroup", "Ungroup a group in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get available icons: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to ungroup shapes: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("set_link", "Set a link from a shape to a URL or a page in Frame0.", {
@@ -660,7 +708,7 @@ server.tool("set_link", "Set a link from a shape to a URL or a page in Frame0.",
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to set link: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to set link: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
@@ -685,7 +733,7 @@ server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to export page image: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to export shape as image: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("add_page", "Add a new page in Frame0. The added page becomes the current page.", {
@@ -699,7 +747,7 @@ server.tool("add_page", "Add a new page in Frame0. The added page becomes the cu
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to add new page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to add page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("update_page", "Update a page in Frame0.", {
@@ -718,7 +766,7 @@ server.tool("update_page", "Update a page in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to update page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to update page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("duplicate_page", "Duplicate a page in Frame0.", {
@@ -738,7 +786,7 @@ server.tool("duplicate_page", "Duplicate a page in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to duplicate page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to duplicate page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("delete_page", "Delete a page in Frame0.", {
@@ -752,7 +800,7 @@ server.tool("delete_page", "Delete a page in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to delete page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to delete page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("get_current_page_id", "Get ID of the current page in Frame0.", {}, async () => {
@@ -762,7 +810,7 @@ server.tool("get_current_page_id", "Get ID of the current page in Frame0.", {}, 
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get current page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to get current page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("set_current_page_by_id", "Set current page by ID in Frame0.", {
@@ -776,7 +824,7 @@ server.tool("set_current_page_by_id", "Set current page by ID in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to set current page: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to set current page: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("get_page", "Get page data in Frame0.", {
@@ -799,7 +847,7 @@ server.tool("get_page", "Get page data in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get page data: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to get page data: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("get_all_pages", "Get all pages data in Frame0.", {
@@ -821,7 +869,7 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to get page data: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to get page data: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 server.tool("export_page_as_image", "Export page as image in Frame0.", {
@@ -845,7 +893,7 @@ server.tool("export_page_as_image", "Export page as image in Frame0.", {
     }
     catch (error) {
         console.error(error);
-        return response.error(`Failed to export page image: ${error}`);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to export page as image: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
 async function main() {
