@@ -42,6 +42,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `create_ellipse`
 - `create_text`
 - `create_line`
+- `create_polygon`
 - `create_connector`
 - `create_icon`
 - `create_image`

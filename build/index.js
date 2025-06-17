@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import * as response from "./response.js";
 import { JsonRpcErrorCode } from "./response.js";
-import { command, filterPage, filterShape, } from "./utils.js";
+import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
 import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
 const VERSION = packageJson.version;
@@ -269,77 +269,22 @@ server.tool("create_line", "Create a line shape in Frame0.", {
     y1: z.number().describe("Y coordinate of the first point."),
     x2: z.number().describe("X coordinate of the second point."),
     y2: z.number().describe("Y coordinate of the second point."),
-    // points: z
-    //   .array(z.tuple([z.number(), z.number()]))
-    //   .min(2)
-    //   .describe(
-    //     "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
-    //   ),
-    // points: z
-    //   .string()
-    //   .describe(
-    //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
-    //   ),
-    // startArrowhead: z
-    //   .enum(ARROWHEADS)
-    //   .optional()
-    //   .describe("Start arrowhead of the line shape."),
-    // endArrowhead: z
-    //   .enum(ARROWHEADS)
-    //   .optional()
-    //   .describe("End arrowhead of the line shape."),
-    // fillColor: z
-    //   .string()
-    //   .optional()
-    //   .default("#ffffff")
-    //   .describe(
-    //     "Fill color of the line shape. (e.g., red, blue) - temp string type"
-    //   ),
     strokeColor: z
         .string()
         .optional()
         .default("#000000")
-        .describe("Stroke color of the line shape. (e.g., black) - temp string type"),
-}, async ({ name, parentId, x1, y1, x2, y2, 
-// points,
-// startArrowhead,
-// endArrowhead,
-// fillColor,
-strokeColor, }) => {
+        .describe("Stroke color in hex code of the line shape. (e.g., black) - temp string type"),
+}, async ({ name, parentId, x1, y1, x2, y2, strokeColor, }) => {
     try {
-        // let parsedPoints = points;
-        // try {
-        //   parsedPoints = JSON.parse(points);
-        //   if (
-        //     !Array.isArray(parsedPoints) ||
-        //     parsedPoints.length < 2 ||
-        //     !parsedPoints.every(
-        //       (p) =>
-        //         Array.isArray(p) &&
-        //         p.length === 2 &&
-        //         typeof p[0] === "number" &&
-        //         typeof p[1] === "number"
-        //     )
-        //   ) {
-        //     throw new Error(
-        //       "Points must be an array of at least two [number, number] tuples."
-        //     );
-        //   }
-        // } catch (e) {
-        //   return response.error(
-        //     JsonRpcErrorCode.InvalidParams,
-        //     `Invalid points format: ${e instanceof Error ? e.message : String(e)} Please provide a JSON string like \"[[10,10],[20,20]]\".`
-        //   );
-        // }
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: {
                 name,
                 path: [[x1, y1], [x2, y2]],
-                tailEndType: "flat", // convertArrowhead(startArrowhead || "none"),
-                headEndType: "flat", // convertArrowhead(endArrowhead || "none"),
-                // fillColor,
+                tailEndType: "flat",
+                headEndType: "flat",
                 strokeColor,
+                lineType: "straight"
             },
             parentId,
         });
@@ -353,68 +298,108 @@ strokeColor, }) => {
         return response.error(JsonRpcErrorCode.InternalError, `Failed to create line: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
-// server.tool(
-//   "create_connector",
-//   "Create a connector shape in Frame0.",
-//   {
-//     name: z.string().describe("Name of the line shape."),
-//     parentId: z
-//       .string()
-//       .optional()
-//       .describe("ID of the parent shape. Typically frame ID."),
-//     startId: z.string().describe("ID of the start shape."),
-//     endId: z.string().describe("ID of the end shape."),
-//     startArrowhead: z
-//       .enum(ARROWHEADS)
-//       .optional()
-//       .default("none")
-//       .describe("Start arrowhead of the line shape."),
-//     endArrowhead: z
-//       .enum(ARROWHEADS)
-//       .optional()
-//       .default("none")
-//       .describe("End arrowhead of the line shape."),
-//     strokeColor: z
-//       .enum(colors)
-//       .optional()
-//       .describe("Stroke color of the line. shape"),
-//   },
-//   async ({
-//     name,
-//     parentId,
-//     startId,
-//     endId,
-//     startArrowhead,
-//     endArrowhead,
-//     strokeColor,
-//   }) => {
-//     try {
-//       const shapeId = await command(apiPort, "shape:create-connector", {
-//         tailId: startId,
-//         headId: endId,
-//         shapeProps: {
-//           name,
-//           tailEndType: convertArrowhead(startArrowhead || "none"),
-//           headEndType: convertArrowhead(endArrowhead || "none"),
-//           strokeColor: convertColor(strokeColor || "$foreground"),
-//         },
-//         parentId,
-//       });
-//       const data = await command(apiPort, "shape:get-shape", {
-//         shapeId,
-//       });
-//       return response.text(
-//         "Created connector: " + JSON.stringify(filterShape(data))
-//       );
-//     } catch (error) {
-//       console.error(error);
-//       return response.error(
-//         JsonRpcErrorCode.InternalError,
-//         `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`
-//       );
-//     }
-//   }
-// );
+server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
+    name: z.string().describe("Name of the polygon shape."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("ID of the parent shape. Typically frame ID."),
+    points: z
+        .array(z.object({
+        x: z.number().describe("X coordinate of the point."),
+        y: z.number().describe("Y coordinate of the point."),
+    }))
+        .min(3)
+        .describe("Array of points defining the polygon shape."),
+    closed: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Whether the polygon shape is closed or not. Default is true."),
+    fillColor: z
+        .string()
+        .optional()
+        .default("#ffffff")
+        .describe("Fill color in hex code of the polygon shape. (e.g., white) - temp string type"),
+    strokeColor: z
+        .string()
+        .optional()
+        .default("#000000")
+        .describe("Stroke color in hex code of the line shape. (e.g., black) - temp string type"),
+}, async ({ name, parentId, points, closed, strokeColor, }) => {
+    try {
+        const path = points.map((point) => [point.x, point.y]);
+        const pathClosed = path[0][0] === path[path.length - 1][0] && path[0][1] === path[path.length - 1][1];
+        if (closed && !pathClosed)
+            path.push(path[0]);
+        const shapeId = await command(apiPort, "shape:create-shape", {
+            type: "Line",
+            shapeProps: {
+                name,
+                path,
+                tailEndType: "flat",
+                headEndType: "flat",
+                strokeColor,
+                lineType: "straight"
+            },
+            parentId,
+        });
+        const data = await command(apiPort, "shape:get-shape", {
+            shapeId,
+        });
+        return response.text("Created line: " + JSON.stringify(filterShape(data)));
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create line: ${error instanceof Error ? error.message : String(error)}`);
+    }
+});
+server.tool("create_connector", "Create a connector shape in Frame0.", {
+    name: z.string().describe("Name of the line shape."),
+    parentId: z
+        .string()
+        .optional()
+        .describe("ID of the parent shape. Typically frame ID."),
+    startId: z.string().describe("ID of the start shape."),
+    endId: z.string().describe("ID of the end shape."),
+    startArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("Start arrowhead of the line shape."),
+    endArrowhead: z
+        .enum(ARROWHEADS)
+        .optional()
+        .default("none")
+        .describe("End arrowhead of the line shape."),
+    strokeColor: z
+        .string()
+        .optional()
+        .default("#000000")
+        .describe("Stroke color in hex code of the line. shape"),
+}, async ({ name, parentId, startId, endId, startArrowhead, endArrowhead, strokeColor, }) => {
+    try {
+        const shapeId = await command(apiPort, "shape:create-connector", {
+            tailId: startId,
+            headId: endId,
+            shapeProps: {
+                name,
+                tailEndType: convertArrowhead(startArrowhead || "none"),
+                headEndType: convertArrowhead(endArrowhead || "none"),
+                strokeColor,
+            },
+            parentId,
+        });
+        const data = await command(apiPort, "shape:get-shape", {
+            shapeId,
+        });
+        return response.text("Created connector: " + JSON.stringify(filterShape(data)));
+    }
+    catch (error) {
+        console.error(error);
+        return response.error(JsonRpcErrorCode.InternalError, `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`);
+    }
+});
 server.tool("create_icon", "Create an icon shape in Frame0.", {
     name: z
         .string()
