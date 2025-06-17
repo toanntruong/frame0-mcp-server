@@ -42,13 +42,14 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
 - `create_ellipse`
 - `create_text`
 - `create_line`
+- `create_polygon`
 - `create_connector`
 - `create_icon`
 - `create_image`
 - `update_shape`
 - `duplicate_shape`
 - `delete_shape`
-- `get_available_icons` (supports optional `search` parameter to filter icons by name or tag)
+- `search_icons`
 - `move_shape`
 - `align_shapes`
 - `group`
