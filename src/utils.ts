@@ -44,7 +44,7 @@ export async function command(port: number, command: string, args: any = {}) {
     }),
   });
   if (!res.ok) {
-    throw new Error(`Failed to execute command(${command}) with args: ${args}`);
+    throw new Error(`Failed to execute command(${command}) with args: ${JSON.stringify(args)}`);
   }
   const json = (await res.json()) as CommandResponse;
   if (!json.success) {
@@ -75,7 +75,7 @@ export function filterShape(shape: any, recursive: boolean = false): any {
   if (typeof shape.horzAlign !== "undefined") json.horzAlign = shape.horzAlign;
   if (typeof shape.vertAlign !== "undefined") json.vertAlign = shape.vertAlign;
   if (typeof shape.path !== "undefined") json.path = shape.path;
-  if (recursive) {
+  if (recursive && Array.isArray(shape.children)) {
     json.children = shape.children.map((child: any) => {
       return filterShape(child, recursive);
     });

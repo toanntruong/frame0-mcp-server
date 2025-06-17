@@ -51,9 +51,10 @@ server.tool(
       .describe("Type of the frame shape to create."),
     name: z.string().describe("Name of the frame shape."),
     fillColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Background color of the frame shape."),
+      .default("#ffffff")
+      .describe("Background color in hex code of the frame shape."),
   },
   async ({ frameType, name, fillColor }) => {
     const FRAME_NAME = {
@@ -96,7 +97,7 @@ server.tool(
             top: -frameHeaderHeight,
             width: frameSize.width,
             height: frameSize.height + frameHeaderHeight,
-            fillColor: convertColor(fillColor),
+            fillColor,
           },
         }
       );
@@ -144,13 +145,15 @@ server.tool(
     width: z.number().describe("Width of the rectangle shape."),
     height: z.number().describe("Height of the rectangle shape."),
     fillColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Fill color of the rectangle shape."),
+      .default("#ffffff")
+      .describe("Fill color in hex code of the rectangle shape."),
     strokeColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Stroke color of the rectangle shape."),
+      .default("#000000")
+      .describe("Stroke color in hex code of the rectangle shape."),
     corners: z
       .array(z.number())
       .length(4)
@@ -179,8 +182,8 @@ server.tool(
           top,
           width,
           height,
-          fillColor: convertColor(fillColor),
-          strokeColor: convertColor(strokeColor),
+          fillColor,
+          strokeColor,
           corners,
         },
         parentId,
@@ -223,13 +226,15 @@ server.tool(
     width: z.number().describe("Width of the ellipse shape."),
     height: z.number().describe("Height of the ellipse shape."),
     fillColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Fill color of the ellipse shape."),
+      .default("#ffffff")
+      .describe("Fill color in hex code of the ellipse shape."),
     strokeColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Stroke color of the ellipse shape."),
+      .default("#000000")
+      .describe("Stroke color in hex code of the ellipse shape."),
   },
   async ({
     name,
@@ -250,8 +255,8 @@ server.tool(
           top,
           width,
           height,
-          fillColor: convertColor(fillColor),
-          strokeColor: convertColor(strokeColor),
+          fillColor,
+          strokeColor,
         },
         parentId,
       });
@@ -308,9 +313,10 @@ server.tool(
         "Plain text content to display of the text shape. Use newline character (0x0A) instead of '\\n' for new line. Dont's use HTML and CSS code in the text content."
       ),
     fontColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Font color of the text shape."),
+      .default("#000000")
+      .describe("Font color in hex code of the text shape."),
     fontSize: z.number().optional().describe("Font size of the text shape."),
   },
   async ({
@@ -333,7 +339,7 @@ server.tool(
           width,
           top,
           text,
-          fontColor: convertColor(fontColor),
+          fontColor,
           fontSize,
           wordWrap: type === "paragraph",
         },
@@ -359,41 +365,47 @@ server.tool(
 // TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool(
   "create_line",
-  "Create a polyline shape in Frame0.",
+  "Create a line shape in Frame0.",
   {
     name: z.string().describe("Name of the line shape."),
     parentId: z
       .string()
       .optional()
       .describe("ID of the parent shape. Typically frame ID."),
-    points: z
-      .array(z.tuple([z.number(), z.number()]))
-      .min(2)
-      .describe(
-        "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
-      ),
+    x1: z.number().describe("X coordinate of the first point."),
+    y1: z.number().describe("Y coordinate of the first point."),
+    x2: z.number().describe("X coordinate of the second point."),
+    y2: z.number().describe("Y coordinate of the second point."),
+    // points: z
+    //   .array(z.tuple([z.number(), z.number()]))
+    //   .min(2)
+    //   .describe(
+    //     "Array of points of the line shape. At least 2 points are required. If first point and last point are the same, it will be a polygon."
+    //   ),
     // points: z
     //   .string()
     //   .describe(
     //     'JSON string representing an array of points (e.g., "[[10,10],[20,20]]"). At least 2 points are required. If first point and last point are the same, it will be a polygon.'
     //   ),
-    startArrowhead: z
-      .enum(ARROWHEADS)
-      .optional()
-      .describe("Start arrowhead of the line shape."),
-    endArrowhead: z
-      .enum(ARROWHEADS)
-      .optional()
-      .describe("End arrowhead of the line shape."),
-    fillColor: z
-      .string()
-      .optional()
-      .describe(
-        "Fill color of the line shape. (e.g., red, blue) - temp string type"
-      ),
+    // startArrowhead: z
+    //   .enum(ARROWHEADS)
+    //   .optional()
+    //   .describe("Start arrowhead of the line shape."),
+    // endArrowhead: z
+    //   .enum(ARROWHEADS)
+    //   .optional()
+    //   .describe("End arrowhead of the line shape."),
+    // fillColor: z
+    //   .string()
+    //   .optional()
+    //   .default("#ffffff")
+    //   .describe(
+    //     "Fill color of the line shape. (e.g., red, blue) - temp string type"
+    //   ),
     strokeColor: z
       .string()
       .optional()
+      .default("#000000")
       .describe(
         "Stroke color of the line shape. (e.g., black) - temp string type"
       ),
@@ -401,14 +413,18 @@ server.tool(
   async ({
     name,
     parentId,
-    points,
-    startArrowhead,
-    endArrowhead,
-    fillColor,
+    x1,
+    y1,
+    x2,
+    y2,
+    // points,
+    // startArrowhead,
+    // endArrowhead,
+    // fillColor,
     strokeColor,
   }) => {
     try {
-      let parsedPoints = points;
+      // let parsedPoints = points;
       // try {
       //   parsedPoints = JSON.parse(points);
       //   if (
@@ -437,11 +453,11 @@ server.tool(
         type: "Line",
         shapeProps: {
           name,
-          path: parsedPoints,
-          tailEndType: convertArrowhead(startArrowhead || "none"),
-          headEndType: convertArrowhead(endArrowhead || "none"),
-          fillColor: convertColor(fillColor || "$background"),
-          strokeColor: convertColor(strokeColor || "$foreground"),
+          path: [[x1, y1], [x2, y2]],
+          tailEndType: "flat", // convertArrowhead(startArrowhead || "none"),
+          headEndType: "flat", // convertArrowhead(endArrowhead || "none"),
+          // fillColor,
+          strokeColor,
         },
         parentId,
       });
@@ -461,68 +477,69 @@ server.tool(
   }
 );
 
-server.tool(
-  "create_connector",
-  "Create a connector shape in Frame0.",
-  {
-    name: z.string().describe("Name of the line shape."),
-    parentId: z
-      .string()
-      .optional()
-      .describe("ID of the parent shape. Typically frame ID."),
-    startId: z.string().describe("ID of the start shape."),
-    endId: z.string().describe("ID of the end shape."),
-    startArrowhead: z
-      .enum(ARROWHEADS)
-      .optional()
-      .default("none")
-      .describe("Start arrowhead of the line shape."),
-    endArrowhead: z
-      .enum(ARROWHEADS)
-      .optional()
-      .default("none")
-      .describe("End arrowhead of the line shape."),
-    strokeColor: z
-      .enum(colors)
-      .optional()
-      .describe("Stroke color of the line. shape"),
-  },
-  async ({
-    name,
-    parentId,
-    startId,
-    endId,
-    startArrowhead,
-    endArrowhead,
-    strokeColor,
-  }) => {
-    try {
-      const shapeId = await command(apiPort, "shape:create-connector", {
-        tailId: startId,
-        headId: endId,
-        shapeProps: {
-          name,
-          tailEndType: convertArrowhead(startArrowhead || "none"),
-          headEndType: convertArrowhead(endArrowhead || "none"),
-          strokeColor: convertColor(strokeColor || "$foreground"),
-        },
-        parentId,
-      });
-      const data = await command(apiPort, "shape:get-shape", {
-        shapeId,
-      });
-      return response.text(
-        "Created connector: " + JSON.stringify(filterShape(data))
-      );
-    } catch (error) {
-      console.error(error);
-      return response.error(
-        JsonRpcErrorCode.InternalError,
-        `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`
-      );
-    }
-  }
-);
+// server.tool(
+//   "create_connector",
+//   "Create a connector shape in Frame0.",
+//   {
+//     name: z.string().describe("Name of the line shape."),
+//     parentId: z
+//       .string()
+//       .optional()
+//       .describe("ID of the parent shape. Typically frame ID."),
+//     startId: z.string().describe("ID of the start shape."),
+//     endId: z.string().describe("ID of the end shape."),
+//     startArrowhead: z
+//       .enum(ARROWHEADS)
+//       .optional()
+//       .default("none")
+//       .describe("Start arrowhead of the line shape."),
+//     endArrowhead: z
+//       .enum(ARROWHEADS)
+//       .optional()
+//       .default("none")
+//       .describe("End arrowhead of the line shape."),
+//     strokeColor: z
+//       .string()
+//       .optional()
+//       .default("#000000")
+//       .describe("Stroke color in hex code of the line. shape"),
+//   },
+//   async ({
+//     name,
+//     parentId,
+//     startId,
+//     endId,
+//     startArrowhead,
+//     endArrowhead,
+//     strokeColor,
+//   }) => {
+//     try {
+//       const shapeId = await command(apiPort, "shape:create-connector", {
+//         tailId: startId,
+//         headId: endId,
+//         shapeProps: {
+//           name,
+//           tailEndType: convertArrowhead(startArrowhead || "none"),
+//           headEndType: convertArrowhead(endArrowhead || "none"),
+//           strokeColor: convertColor(strokeColor || "$foreground"),
+//         },
+//         parentId,
+//       });
+//       const data = await command(apiPort, "shape:get-shape", {
+//         shapeId,
+//       });
+//       return response.text(
+//         "Created connector: " + JSON.stringify(filterShape(data))
+//       );
+//     } catch (error) {
+//       console.error(error);
+//       return response.error(
+//         JsonRpcErrorCode.InternalError,
+//         `Failed to create connector: ${error instanceof Error ? error.message : String(error)}`
+//       );
+//     }
+//   }
+// );
 
 server.tool(
   "create_icon",
@@ -553,9 +570,10 @@ server.tool(
         "Size of the icon shape. 'small' is 16 x 16, 'medium' is 24 x 24, 'large' is 32 x 32, 'extra-large' is 48 x 48."
       ),
     strokeColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe(`Stroke color of the icon shape.`),
+      .default("#000000")
+      .describe(`Stroke color in hex code of the icon shape.`),
   },
   async ({ name, parentId, left, top, size, strokeColor }) => {
     try {
@@ -572,7 +590,7 @@ server.tool(
           top,
           width: sizeValue ?? 24,
           height: sizeValue ?? 24,
-          strokeColor: convertColor(strokeColor),
+          strokeColor,
         },
         parentId,
       });
@@ -652,15 +670,15 @@ server.tool(
     name: z.string().optional().describe("Name of the shape."),
     width: z.number().optional().describe("Width of the shape."),
     height: z.number().optional().describe("Height of the shape."),
-    fillColor: z.enum(colors).optional().describe("Fill color of the shape."),
+    fillColor: z.string().optional().describe("Fill color in hex code of the shape."),
     strokeColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Stroke color of the shape."),
+      .describe("Stroke color in hex code of the shape."),
     fontColor: z
-      .enum(colors)
+      .string()
       .optional()
-      .describe("Font color of the text shape."),
+      .describe("Font color in hex code of the text shape."),
     fontSize: z.number().optional().describe("Font size of the text shape."),
     corners: z
       .array(z.number())
@@ -695,9 +713,9 @@ server.tool(
           name,
           width,
           height,
-          fillColor: convertColor(fillColor),
-          strokeColor: convertColor(strokeColor),
-          fontColor: convertColor(fontColor),
+          fillColor,
+          strokeColor,
+          fontColor,
           fontSize,
           corners,
           text,
@@ -785,21 +803,21 @@ server.tool(
 );
 
 server.tool(
-  "get_available_icons",
-  "Get available icon shapes in Frame0.",
+  "search_icons",
+  "Search icon shapes available in Frame0.",
   {
-    search: z
+    keyword: z
       .string()
       .optional()
       .describe(
-        "Search term to filter icon by name or tags (case-insensitive)"
+        "Search keyword to filter icon by name or tags (case-insensitive)"
       ),
   },
-  async ({ search }) => {
+  async ({ keyword }) => {
     try {
       const data = await command(apiPort, "shape:get-available-icons", {});
       const icons = Array.isArray(data) ? data : [];
-      const filtered = search
+      const filtered = keyword
         ? icons.filter((icon: { name: string; tags: string[] }) => {
             if (
               typeof icon !== "object" ||
@@ -808,7 +826,7 @@ server.tool(
             ) {
               return false;
             }
-            const searchLower = search.toLowerCase();
+            const searchLower = keyword.toLowerCase();
             return (
               icon.name.toLowerCase().includes(searchLower) ||
               icon.tags.some((tag: string) =>
@@ -822,7 +840,7 @@ server.tool(
       console.error(error);
       return response.error(
         JsonRpcErrorCode.InternalError,
-        `Failed to get available icons: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to search available icons: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
