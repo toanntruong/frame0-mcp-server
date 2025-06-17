@@ -71,6 +71,8 @@ export function filterShape(shape, recursive = false) {
         json.vertAlign = shape.vertAlign;
     if (typeof shape.path !== "undefined")
         json.path = shape.path;
+    if (typeof shape.referenceId !== "undefined")
+        json.linkToPage = shape.referenceId;
     if (recursive && Array.isArray(shape.children)) {
         json.children = shape.children.map((child) => {
             return filterShape(child, recursive);

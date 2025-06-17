@@ -11,7 +11,6 @@ import {
   filterPage,
   filterShape,
 } from "./utils.js";
-import { colors, convertColor } from "./colors.js";
 import packageJson from "../package.json" with { type: "json" };
 
 const NAME = "frame0-mcp-server";
@@ -362,7 +361,6 @@ server.tool(
   }
 );
 
-// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool(
   "create_line",
   "Create a line shape in Frame0.",

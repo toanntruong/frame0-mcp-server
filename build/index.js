@@ -258,7 +258,6 @@ server.tool("create_text", "Create a text shape in Frame0.", {
         return response.error(JsonRpcErrorCode.InternalError, `Failed to create text: ${error instanceof Error ? error.message : String(error)}`);
     }
 });
-// TODO: Consider to split this tool into two tools: create_line and create_polygon
 server.tool("create_line", "Create a line shape in Frame0.", {
     name: z.string().describe("Name of the line shape."),
     parentId: z
