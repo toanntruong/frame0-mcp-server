@@ -52,7 +52,7 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
     };
     const FRAME_SIZE = {
         phone: { width: 320, height: 690 },
-        tablet: { width: 520, height: 790 },
+        tablet: { width: 600, height: 800 },
         desktop: { width: 800, height: 600 },
         browser: { width: 800, height: 600 },
         watch: { width: 198, height: 242 },
@@ -273,17 +273,20 @@ server.tool("create_line", "Create a line shape in Frame0.", {
         .optional()
         .default("#000000")
         .describe("Stroke color in hex code of the line shape. (e.g., black) - temp string type"),
-}, async ({ name, parentId, x1, y1, x2, y2, strokeColor, }) => {
+}, async ({ name, parentId, x1, y1, x2, y2, strokeColor }) => {
     try {
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: {
                 name,
-                path: [[x1, y1], [x2, y2]],
+                path: [
+                    [x1, y1],
+                    [x2, y2],
+                ],
                 tailEndType: "flat",
                 headEndType: "flat",
                 strokeColor,
-                lineType: "straight"
+                lineType: "straight",
             },
             parentId,
         });
@@ -325,10 +328,11 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
         .optional()
         .default("#000000")
         .describe("Stroke color in hex code of the line shape. (e.g., black) - temp string type"),
-}, async ({ name, parentId, points, closed, strokeColor, }) => {
+}, async ({ name, parentId, points, closed, strokeColor }) => {
     try {
         const path = points.map((point) => [point.x, point.y]);
-        const pathClosed = path[0][0] === path[path.length - 1][0] && path[0][1] === path[path.length - 1][1];
+        const pathClosed = path[0][0] === path[path.length - 1][0] &&
+            path[0][1] === path[path.length - 1][1];
         if (closed && !pathClosed)
             path.push(path[0]);
         const shapeId = await command(apiPort, "shape:create-shape", {
@@ -339,7 +343,7 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
                 tailEndType: "flat",
                 headEndType: "flat",
                 strokeColor,
-                lineType: "straight"
+                lineType: "straight",
             },
             parentId,
         });
@@ -493,7 +497,10 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
     name: z.string().optional().describe("Name of the shape."),
     width: z.number().optional().describe("Width of the shape."),
     height: z.number().optional().describe("Height of the shape."),
-    fillColor: z.string().optional().describe("Fill color in hex code of the shape."),
+    fillColor: z
+        .string()
+        .optional()
+        .describe("Fill color in hex code of the shape."),
     strokeColor: z
         .string()
         .optional()

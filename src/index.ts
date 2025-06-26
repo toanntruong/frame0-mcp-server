@@ -66,7 +66,7 @@ server.tool(
     };
     const FRAME_SIZE = {
       phone: { width: 320, height: 690 },
-      tablet: { width: 520, height: 790 },
+      tablet: { width: 600, height: 800 },
       desktop: { width: 800, height: 600 },
       browser: { width: 800, height: 600 },
       watch: { width: 198, height: 242 },
@@ -382,25 +382,20 @@ server.tool(
         "Stroke color in hex code of the line shape. (e.g., black) - temp string type"
       ),
   },
-  async ({
-    name,
-    parentId,
-    x1,
-    y1,
-    x2,
-    y2,
-    strokeColor,
-  }) => {
+  async ({ name, parentId, x1, y1, x2, y2, strokeColor }) => {
     try {
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
         shapeProps: {
           name,
-          path: [[x1, y1], [x2, y2]],
+          path: [
+            [x1, y1],
+            [x2, y2],
+          ],
           tailEndType: "flat",
           headEndType: "flat",
           strokeColor,
-          lineType: "straight"
+          lineType: "straight",
         },
         parentId,
       });
@@ -447,7 +442,9 @@ server.tool(
       .string()
       .optional()
       .default("#ffffff")
-      .describe("Fill color in hex code of the polygon shape. (e.g., white) - temp string type"),
+      .describe(
+        "Fill color in hex code of the polygon shape. (e.g., white) - temp string type"
+      ),
     strokeColor: z
       .string()
       .optional()
@@ -456,16 +453,12 @@ server.tool(
         "Stroke color in hex code of the line shape. (e.g., black) - temp string type"
       ),
   },
-  async ({
-    name,
-    parentId,
-    points,
-    closed,
-    strokeColor,
-  }) => {
+  async ({ name, parentId, points, closed, strokeColor }) => {
     try {
       const path = points.map((point) => [point.x, point.y]);
-      const pathClosed = path[0][0] === path[path.length - 1][0] && path[0][1] === path[path.length - 1][1]; 
+      const pathClosed =
+        path[0][0] === path[path.length - 1][0] &&
+        path[0][1] === path[path.length - 1][1];
       if (closed && !pathClosed) path.push(path[0]);
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
@@ -475,7 +468,7 @@ server.tool(
           tailEndType: "flat",
           headEndType: "flat",
           strokeColor,
-          lineType: "straight"
+          lineType: "straight",
         },
         parentId,
       });
@@ -688,7 +681,10 @@ server.tool(
     name: z.string().optional().describe("Name of the shape."),
     width: z.number().optional().describe("Width of the shape."),
     height: z.number().optional().describe("Height of the shape."),
-    fillColor: z.string().optional().describe("Fill color in hex code of the shape."),
+    fillColor: z
+      .string()
+      .optional()
+      .describe("Fill color in hex code of the shape."),
     strokeColor: z
       .string()
       .optional()
