@@ -81,6 +81,7 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
                 height: frameSize.height + frameHeaderHeight,
                 fillColor,
             },
+            convertColors: true,
         });
         await command(apiPort, "view:fit-to-screen");
         const data = await command(apiPort, "shape:get-shape", {
@@ -142,6 +143,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
                 corners,
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -191,6 +193,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
                 strokeColor,
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -246,6 +249,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
                 wordWrap: type === "paragraph",
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -289,6 +293,7 @@ server.tool("create_line", "Create a line shape in Frame0.", {
                 lineType: "straight",
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -346,6 +351,7 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
                 lineType: "straight",
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -392,6 +398,7 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
                 strokeColor,
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -443,6 +450,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
                 strokeColor,
             },
             parentId,
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId,
@@ -534,6 +542,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
                 corners,
                 text,
             },
+            convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
             shapeId: updatedId,

@@ -98,6 +98,7 @@ server.tool(
             height: frameSize.height + frameHeaderHeight,
             fillColor,
           },
+          convertColors: true,
         }
       );
       await command(apiPort, "view:fit-to-screen");
@@ -186,6 +187,7 @@ server.tool(
           corners,
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -258,6 +260,7 @@ server.tool(
           strokeColor,
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -343,6 +346,7 @@ server.tool(
           wordWrap: type === "paragraph",
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -398,6 +402,7 @@ server.tool(
           lineType: "straight",
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -471,6 +476,7 @@ server.tool(
           lineType: "straight",
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -535,6 +541,7 @@ server.tool(
           strokeColor,
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -604,6 +611,7 @@ server.tool(
           strokeColor,
         },
         parentId,
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId,
@@ -734,6 +742,7 @@ server.tool(
           corners,
           text,
         },
+        convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
         shapeId: updatedId,
