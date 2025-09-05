@@ -140,7 +140,7 @@ server.tool(
     top: z
       .number()
       .describe(
-        "Left position of the rectangle shape in the absolute coordinate system."
+        "Top position of the rectangle shape in the absolute coordinate system."
       ),
     width: z.number().describe("Width of the rectangle shape."),
     height: z.number().describe("Height of the rectangle shape."),
@@ -158,6 +158,7 @@ server.tool(
       .array(z.number())
       .length(4)
       .optional()
+      .default([0, 0, 0, 0])
       .describe(
         "Corner radius of the rectangle shape. Must be in the form of [left-top, right-top, right-bottom, left-bottom]."
       ),
