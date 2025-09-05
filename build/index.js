@@ -110,7 +110,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
         .describe("Left position of the rectangle shape in the absolute coordinate system."),
     top: z
         .number()
-        .describe("Left position of the rectangle shape in the absolute coordinate system."),
+        .describe("Top position of the rectangle shape in the absolute coordinate system."),
     width: z.number().describe("Width of the rectangle shape."),
     height: z.number().describe("Height of the rectangle shape."),
     fillColor: z
@@ -127,6 +127,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
         .array(z.number())
         .length(4)
         .optional()
+        .default([0, 0, 0, 0])
         .describe("Corner radius of the rectangle shape. Must be in the form of [left-top, right-top, right-bottom, left-bottom]."),
 }, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, corners, }) => {
     try {
