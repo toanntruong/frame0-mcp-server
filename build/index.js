@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import * as response from "./response.js";
 import { JsonRpcErrorCode } from "./response.js";
-import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, } from "./utils.js";
+import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, trimObject, } from "./utils.js";
 import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
 const VERSION = packageJson.version;
@@ -73,14 +73,14 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
         const frameName = FRAME_NAME[frameType];
         const shapeId = await command(apiPort, "shape:create-shape-from-library-by-query", {
             query: `${frameName}&@Frame`,
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 left: 0,
                 top: -frameHeaderHeight,
                 width: frameSize.width,
                 height: frameSize.height + frameHeaderHeight,
                 fillColor,
-            },
+            }),
             convertColors: true,
         });
         await command(apiPort, "view:fit-to-screen");
@@ -133,7 +133,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
     try {
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Rectangle",
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 left,
                 top,
@@ -142,7 +142,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
                 fillColor,
                 strokeColor,
                 corners,
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -184,7 +184,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
     try {
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Ellipse",
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 left,
                 top,
@@ -192,7 +192,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
                 height,
                 fillColor,
                 strokeColor,
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -239,7 +239,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
     try {
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Text",
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 left,
                 width,
@@ -248,7 +248,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
                 fontColor,
                 fontSize,
                 wordWrap: type === "paragraph",
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -282,7 +282,7 @@ server.tool("create_line", "Create a line shape in Frame0.", {
     try {
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 path: [
                     [x1, y1],
@@ -292,7 +292,7 @@ server.tool("create_line", "Create a line shape in Frame0.", {
                 headEndType: "flat",
                 strokeColor,
                 lineType: "straight",
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -343,14 +343,14 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
             path.push(path[0]);
         const shapeId = await command(apiPort, "shape:create-shape", {
             type: "Line",
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 path,
                 tailEndType: "flat",
                 headEndType: "flat",
                 strokeColor,
                 lineType: "straight",
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -392,12 +392,12 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
         const shapeId = await command(apiPort, "shape:create-connector", {
             tailId: startId,
             headId: endId,
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 tailEndType: convertArrowhead(startArrowhead || "none"),
                 headEndType: convertArrowhead(endArrowhead || "none"),
                 strokeColor,
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -443,13 +443,13 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
         }[size];
         const shapeId = await command(apiPort, "shape:create-icon", {
             iconName: name,
-            shapeProps: {
+            shapeProps: trimObject({
                 left,
                 top,
                 width: sizeValue ?? 24,
                 height: sizeValue ?? 24,
                 strokeColor,
-            },
+            }),
             parentId,
             convertColors: true,
         });
@@ -484,11 +484,11 @@ server.tool("create_image", "Create an image shape in Frame0.", {
         const shapeId = await command(apiPort, "shape:create-image", {
             mimeType,
             imageData,
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 left,
                 top,
-            },
+            }),
             parentId,
         });
         const data = await command(apiPort, "shape:get-shape", {
@@ -532,7 +532,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
     try {
         const updatedId = await command(apiPort, "shape:update-shape", {
             shapeId,
-            shapeProps: {
+            shapeProps: trimObject({
                 name,
                 width,
                 height,
@@ -542,7 +542,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
                 fontSize,
                 corners,
                 text,
-            },
+            }),
             convertColors: true,
         });
         const data = await command(apiPort, "shape:get-shape", {
@@ -699,7 +699,7 @@ server.tool("group", "Group shapes in Frame0.", {
         const data = await command(apiPort, "shape:get-shape", {
             shapeId: groupId,
         });
-        return response.text("Created roup: " + JSON.stringify(filterShape(data)));
+        return response.text("Created group: " + JSON.stringify(filterShape(data)));
     }
     catch (error) {
         console.error(error);
@@ -737,11 +737,11 @@ server.tool("set_link", "Set a link from a shape to a URL or a page in Frame0.",
     try {
         await command(apiPort, "shape:set-link", {
             shapeId,
-            linkProps: {
+            linkProps: trimObject({
                 linkType,
                 url,
                 pageId,
-            },
+            }),
         });
         return response.text(`A link is assigned to shape (id: ${shapeId})`);
     }
@@ -780,7 +780,7 @@ server.tool("add_page", "Add a new page in Frame0. The added page becomes the cu
 }, async ({ name }) => {
     try {
         const pageData = await command(apiPort, "page:add", {
-            pageProps: { name },
+            pageProps: trimObject({ name }),
         });
         return response.text(`Added page: ${JSON.stringify(pageData)}`);
     }
@@ -796,7 +796,7 @@ server.tool("update_page", "Update a page in Frame0.", {
     try {
         const updatedPageId = await command(apiPort, "page:update", {
             pageId,
-            pageProps: { name },
+            pageProps: trimObject({ name }),
         });
         const pageData = await command(apiPort, "page:get", {
             pageId: updatedPageId,
@@ -815,7 +815,7 @@ server.tool("duplicate_page", "Duplicate a page in Frame0.", {
     try {
         const duplicatedPageId = await command(apiPort, "page:duplicate", {
             pageId,
-            pageProps: { name },
+            pageProps: trimObject({ name }),
         });
         const pageData = await command(apiPort, "page:get", {
             pageId: duplicatedPageId,

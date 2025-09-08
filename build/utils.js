@@ -98,3 +98,15 @@ export function convertArrowhead(arrowhead) {
             return arrowhead;
     }
 }
+/**
+ * Trim object by removing undefined values.
+ */
+export function trimObject(obj) {
+    const result = {};
+    Object.keys(obj).forEach((key) => {
+        if (obj[key] !== undefined) {
+            result[key] = obj[key];
+        }
+    });
+    return result;
+}

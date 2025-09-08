@@ -10,6 +10,7 @@ import {
   command,
   filterPage,
   filterShape,
+  trimObject,
 } from "./utils.js";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -90,14 +91,14 @@ server.tool(
         "shape:create-shape-from-library-by-query",
         {
           query: `${frameName}&@Frame`,
-          shapeProps: {
+          shapeProps: trimObject({
             name,
             left: 0,
             top: -frameHeaderHeight,
             width: frameSize.width,
             height: frameSize.height + frameHeaderHeight,
             fillColor,
-          },
+          }),
           convertColors: true,
         }
       );
@@ -177,7 +178,7 @@ server.tool(
     try {
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Rectangle",
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           left,
           top,
@@ -186,7 +187,7 @@ server.tool(
           fillColor,
           strokeColor,
           corners,
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -251,7 +252,7 @@ server.tool(
     try {
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Ellipse",
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           left,
           top,
@@ -259,7 +260,7 @@ server.tool(
           height,
           fillColor,
           strokeColor,
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -336,7 +337,7 @@ server.tool(
     try {
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Text",
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           left,
           width,
@@ -345,7 +346,7 @@ server.tool(
           fontColor,
           fontSize,
           wordWrap: type === "paragraph",
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -391,7 +392,7 @@ server.tool(
     try {
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           path: [
             [x1, y1],
@@ -401,7 +402,7 @@ server.tool(
           headEndType: "flat",
           strokeColor,
           lineType: "straight",
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -468,14 +469,14 @@ server.tool(
       if (closed && !pathClosed) path.push(path[0]);
       const shapeId = await command(apiPort, "shape:create-shape", {
         type: "Line",
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           path,
           tailEndType: "flat",
           headEndType: "flat",
           strokeColor,
           lineType: "straight",
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -535,12 +536,12 @@ server.tool(
       const shapeId = await command(apiPort, "shape:create-connector", {
         tailId: startId,
         headId: endId,
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           tailEndType: convertArrowhead(startArrowhead || "none"),
           headEndType: convertArrowhead(endArrowhead || "none"),
           strokeColor,
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -604,13 +605,13 @@ server.tool(
       }[size];
       const shapeId = await command(apiPort, "shape:create-icon", {
         iconName: name,
-        shapeProps: {
+        shapeProps: trimObject({
           left,
           top,
           width: sizeValue ?? 24,
           height: sizeValue ?? 24,
           strokeColor,
-        },
+        }),
         parentId,
         convertColors: true,
       });
@@ -659,11 +660,11 @@ server.tool(
       const shapeId = await command(apiPort, "shape:create-image", {
         mimeType,
         imageData,
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           left,
           top,
-        },
+        }),
         parentId,
       });
       const data = await command(apiPort, "shape:get-shape", {
@@ -732,7 +733,7 @@ server.tool(
     try {
       const updatedId = await command(apiPort, "shape:update-shape", {
         shapeId,
-        shapeProps: {
+        shapeProps: trimObject({
           name,
           width,
           height,
@@ -742,7 +743,7 @@ server.tool(
           fontSize,
           corners,
           text,
-        },
+        }),
         convertColors: true,
       });
       const data = await command(apiPort, "shape:get-shape", {
@@ -964,7 +965,7 @@ server.tool(
         shapeId: groupId,
       });
       return response.text(
-        "Created roup: " + JSON.stringify(filterShape(data))
+        "Created group: " + JSON.stringify(filterShape(data))
       );
     } catch (error) {
       console.error(error);
@@ -1019,11 +1020,11 @@ server.tool(
     try {
       await command(apiPort, "shape:set-link", {
         shapeId,
-        linkProps: {
+        linkProps: trimObject({
           linkType,
           url,
           pageId,
-        },
+        }),
       });
       return response.text(`A link is assigned to shape (id: ${shapeId})`);
     } catch (error) {
@@ -1078,7 +1079,7 @@ server.tool(
   async ({ name }) => {
     try {
       const pageData = await command(apiPort, "page:add", {
-        pageProps: { name },
+        pageProps: trimObject({ name }),
       });
       return response.text(`Added page: ${JSON.stringify(pageData)}`);
     } catch (error) {
@@ -1102,7 +1103,7 @@ server.tool(
     try {
       const updatedPageId = await command(apiPort, "page:update", {
         pageId,
-        pageProps: { name },
+        pageProps: trimObject({ name }),
       });
       const pageData = await command(apiPort, "page:get", {
         pageId: updatedPageId,
@@ -1129,7 +1130,7 @@ server.tool(
     try {
       const duplicatedPageId = await command(apiPort, "page:duplicate", {
         pageId,
-        pageProps: { name },
+        pageProps: trimObject({ name }),
       });
       const pageData = await command(apiPort, "page:get", {
         pageId: duplicatedPageId,
