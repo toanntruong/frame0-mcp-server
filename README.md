@@ -12,6 +12,16 @@ Prerequisite:
 - [Frame0](https://frame0.app/) `v1.0.0-beta.17` or higher.
 - [Node.js](https://nodejs.org/) `v22` or higher.
 
+## Transport Options
+
+The Frame0 MCP server supports multiple transport methods:
+
+1. **Stdio Transport** (default) - For Claude Desktop and command-line tools
+2. **HTTP Transport** (Streamable HTTP) - For web applications and HTTP clients  
+3. **SSE Transport** (Server-Sent Events) - For backwards compatibility
+
+### Stdio Transport (Default)
+
 Setup for Claude Desktop in `claude_desktop_config.json` as below:
 
 ```json
@@ -25,7 +35,76 @@ Setup for Claude Desktop in `claude_desktop_config.json` as below:
 }
 ```
 
-You can use `--api-port=<port>` optional parameter to use another port number for Frame0's API server.
+Optional parameters:
+- `--host=<hostname>` - Specify the hostname/IP address for Frame0's API server (default: `localhost`)
+- `--api-port=<port>` - Specify the port number for Frame0's API server (default: `58320`)
+
+Example with custom host and port:
+```json
+{
+  "mcpServers": {
+    "frame0-mcp-server": {
+      "command": "npx",
+      "args": ["-y", "frame0-mcp-server", "--host=10.10.10.38", "--api-port=58320"]
+    }
+  }
+}
+```
+
+### HTTP Transport (for Web Applications)
+
+Start the HTTP server:
+```bash
+# Using npm
+npm run start:http
+
+# Or using npx
+npx frame0-mcp-http --host=10.10.10.38 --api-port=58320 --http-port=3000
+
+# Or using node directly
+node build/http-server.js --host=10.10.10.38 --api-port=58320 --http-port=3000
+```
+
+HTTP server parameters:
+- `--host=<hostname>` - Frame0 API server hostname/IP (default: `localhost`)
+- `--api-port=<port>` - Frame0 API server port (default: `58320`)
+- `--http-port=<port>` - HTTP server port (default: `3000`)
+- `--cors=<true|false>` - Enable CORS (default: `true`)
+
+#### Available Endpoints
+
+- **Streamable HTTP**: `POST http://localhost:3000/mcp` - Modern MCP protocol
+- **SSE**: `GET http://localhost:3000/sse` - Legacy SSE stream  
+- **Messages**: `POST http://localhost:3000/messages` - Legacy message endpoint
+- **Health**: `GET http://localhost:3000/health` - Server health check
+- **Info**: `GET http://localhost:3000/info` - Server information
+
+#### Client Connection Example
+
+```javascript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+const client = new Client({
+  name: 'frame0-client',
+  version: '1.0.0'
+});
+
+const transport = new StreamableHTTPClientTransport(
+  new URL('http://localhost:3000/mcp')
+);
+
+await client.connect(transport);
+
+// Now you can use the client
+const tools = await client.listTools();
+const result = await client.callTool({
+  name: "add_page",
+  arguments: { name: "My Page" }
+});
+```
+
+See [examples/http-client.js](examples/http-client.js) for a complete client example with backwards compatibility.
 
 ## Example Prompts
 
@@ -80,7 +159,7 @@ You can use `--api-port=<port>` optional parameter to use another port number fo
   "mcpServers": {
     "frame0-mcp-server": {
       "command": "node",
-      "args": ["<full-path-to>/frame0-mcp-server/build/index.js"]
+      "args": ["<full-path-to>/frame0-mcp-server/build/index.js", "--host=10.10.10.38", "--api-port=58320"]
     }
   }
 }

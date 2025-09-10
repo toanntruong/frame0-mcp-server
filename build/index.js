@@ -8,11 +8,17 @@ import { ARROWHEADS, convertArrowhead, command, filterPage, filterShape, trimObj
 import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
 const VERSION = packageJson.version;
-// port number for the Frame0's API server (default: 58320)
+// host and port for the Frame0's API server
+let apiHost = "localhost";
 let apiPort = 58320;
 // command line argument parsing
 const args = process.argv.slice(2);
+const apiHostArg = args.find((arg) => arg.startsWith("--host="));
 const apiPortArg = args.find((arg) => arg.startsWith("--api-port="));
+if (apiHostArg) {
+    const host = apiHostArg.split("=")[1];
+    apiHost = host || "localhost";
+}
 if (apiPortArg) {
     const port = apiPortArg.split("=")[1];
     try {
@@ -71,7 +77,7 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
         const frameHeaderHeight = FRAME_HEADER_HEIGHT[frameType];
         const frameSize = FRAME_SIZE[frameType];
         const frameName = FRAME_NAME[frameType];
-        const shapeId = await command(apiPort, "shape:create-shape-from-library-by-query", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape-from-library-by-query", {
             query: `${frameName}&@Frame`,
             shapeProps: trimObject({
                 name,
@@ -83,8 +89,8 @@ server.tool("create_frame", "Create a frame shape in Frame0. Must add a new page
             }),
             convertColors: true,
         });
-        await command(apiPort, "view:fit-to-screen");
-        const data = await command(apiPort, "shape:get-shape", {
+        await command(apiHost, apiPort, "view:fit-to-screen");
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created frame: " +
@@ -131,7 +137,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
         .describe("Corner radius of the rectangle shape. Must be in the form of [left-top, right-top, right-bottom, left-bottom]."),
 }, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, corners, }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-shape", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape", {
             type: "Rectangle",
             shapeProps: trimObject({
                 name,
@@ -146,7 +152,7 @@ server.tool("create_rectangle", `Create a rectangle shape in Frame0.`, {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created rectangle: " + JSON.stringify(filterShape(data)));
@@ -182,7 +188,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
         .describe("Stroke color in hex code of the ellipse shape."),
 }, async ({ name, parentId, left, top, width, height, fillColor, strokeColor, }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-shape", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape", {
             type: "Ellipse",
             shapeProps: trimObject({
                 name,
@@ -196,7 +202,7 @@ server.tool("create_ellipse", `Create an ellipse shape in Frame0.`, {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created ellipse: " + JSON.stringify(filterShape(data)));
@@ -237,7 +243,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
     fontSize: z.number().optional().describe("Font size of the text shape."),
 }, async ({ type, name, parentId, left, top, width, text, fontColor, fontSize, }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-shape", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape", {
             type: "Text",
             shapeProps: trimObject({
                 name,
@@ -252,7 +258,7 @@ server.tool("create_text", "Create a text shape in Frame0.", {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created text: " +
@@ -280,7 +286,7 @@ server.tool("create_line", "Create a line shape in Frame0.", {
         .describe("Stroke color in hex code of the line shape. (e.g., black) - temp string type"),
 }, async ({ name, parentId, x1, y1, x2, y2, strokeColor }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-shape", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: trimObject({
                 name,
@@ -296,7 +302,7 @@ server.tool("create_line", "Create a line shape in Frame0.", {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created line: " + JSON.stringify(filterShape(data)));
@@ -341,7 +347,7 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
             path[0][1] === path[path.length - 1][1];
         if (closed && !pathClosed)
             path.push(path[0]);
-        const shapeId = await command(apiPort, "shape:create-shape", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-shape", {
             type: "Line",
             shapeProps: trimObject({
                 name,
@@ -354,7 +360,7 @@ server.tool("create_polygon", "Create a polygon or polyline shape in Frame0.", {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created line: " + JSON.stringify(filterShape(data)));
@@ -389,7 +395,7 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
         .describe("Stroke color in hex code of the line. shape"),
 }, async ({ name, parentId, startId, endId, startArrowhead, endArrowhead, strokeColor, }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-connector", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-connector", {
             tailId: startId,
             headId: endId,
             shapeProps: trimObject({
@@ -401,7 +407,7 @@ server.tool("create_connector", "Create a connector shape in Frame0.", {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created connector: " + JSON.stringify(filterShape(data)));
@@ -441,7 +447,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
             large: 32,
             "extra-large": 48,
         }[size];
-        const shapeId = await command(apiPort, "shape:create-icon", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-icon", {
             iconName: name,
             shapeProps: trimObject({
                 left,
@@ -453,7 +459,7 @@ server.tool("create_icon", "Create an icon shape in Frame0.", {
             parentId,
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created icon: " + JSON.stringify(filterShape(data)));
@@ -481,7 +487,7 @@ server.tool("create_image", "Create an image shape in Frame0.", {
         .describe("Top position of the image shape in the absolute coordinate system."),
 }, async ({ name, parentId, mimeType, imageData, left, top }) => {
     try {
-        const shapeId = await command(apiPort, "shape:create-image", {
+        const shapeId = await command(apiHost, apiPort, "shape:create-image", {
             mimeType,
             imageData,
             shapeProps: trimObject({
@@ -491,7 +497,7 @@ server.tool("create_image", "Create an image shape in Frame0.", {
             }),
             parentId,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
         return response.text("Created image: " + JSON.stringify(filterShape(data)));
@@ -530,7 +536,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
         .describe("Plain text content to display of the text shape. Don't include escape sequences and HTML and CSS code in the text content."),
 }, async ({ shapeId, name, width, height, strokeColor, fillColor, fontColor, fontSize, corners, text, }) => {
     try {
-        const updatedId = await command(apiPort, "shape:update-shape", {
+        const updatedId = await command(apiHost, apiPort, "shape:update-shape", {
             shapeId,
             shapeProps: trimObject({
                 name,
@@ -545,7 +551,7 @@ server.tool("update_shape", "Update properties of a shape in Frame0.", {
             }),
             convertColors: true,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId: updatedId,
         });
         return response.text("Updated shape: " + JSON.stringify(filterShape(data)));
@@ -571,14 +577,14 @@ server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
         .describe("Delta Y value by which the duplicated shape moves."),
 }, async ({ shapeId, parentId, dx, dy }) => {
     try {
-        const duplicatedShapeIdArray = await command(apiPort, "edit:duplicate", {
+        const duplicatedShapeIdArray = await command(apiHost, apiPort, "edit:duplicate", {
             shapeIdArray: [shapeId],
             parentId,
             dx,
             dy,
         });
         const duplicatedShapeId = duplicatedShapeIdArray[0];
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId: duplicatedShapeId,
         });
         return response.text("Duplicated shape: " + JSON.stringify(filterShape(data)));
@@ -590,7 +596,7 @@ server.tool("duplicate_shape", "Duplicate a shape in Frame0.", {
 });
 server.tool("delete_shape", "Delete a shape in Frame0.", { shapeId: z.string().describe("ID of the shape to delete") }, async ({ shapeId }) => {
     try {
-        await command(apiPort, "edit:delete", {
+        await command(apiHost, apiPort, "edit:delete", {
             shapeIdArray: [shapeId],
         });
         return response.text("Deleted shape of id: " + shapeId);
@@ -607,7 +613,7 @@ server.tool("search_icons", "Search icon shapes available in Frame0.", {
         .describe("Search keyword to filter icon by name or tags (case-insensitive)"),
 }, async ({ keyword }) => {
     try {
-        const data = await command(apiPort, "shape:get-available-icons", {});
+        const data = await command(apiHost, apiPort, "shape:get-available-icons", {});
         const icons = Array.isArray(data) ? data : [];
         const filtered = keyword
             ? icons.filter((icon) => {
@@ -634,7 +640,7 @@ server.tool("move_shape", "Move a shape in Frame0.", {
     dy: z.number().describe("Delta Y"),
 }, async ({ shapeId, dx, dy }) => {
     try {
-        await command(apiPort, "shape:move", {
+        await command(apiHost, apiPort, "shape:move", {
             shapeId,
             dx,
             dy,
@@ -676,7 +682,7 @@ server.tool("align_shapes", "Align shapes in Frame0.", {
         "distribute-vertically": "align:vertical-distribute",
     };
     try {
-        await command(apiPort, COMMAND[alignType], { shapeIdArray });
+        await command(apiHost, apiPort, COMMAND[alignType], { shapeIdArray });
         return response.text("Shapes are aligned.");
     }
     catch (error) {
@@ -692,11 +698,11 @@ server.tool("group", "Group shapes in Frame0.", {
         .describe("ID of the parent shape where the group will be added. If not provided, the group will be added to the current page."),
 }, async ({ shapeIdArray, parentId }) => {
     try {
-        const groupId = await command(apiPort, "shape:group", {
+        const groupId = await command(apiHost, apiPort, "shape:group", {
             shapeIdArray,
             parentId,
         });
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId: groupId,
         });
         return response.text("Created group: " + JSON.stringify(filterShape(data)));
@@ -710,7 +716,7 @@ server.tool("ungroup", "Ungroup a group in Frame0.", {
     groupId: z.string().describe("ID of the group to ungroup"),
 }, async ({ groupId }) => {
     try {
-        await command(apiPort, "shape:ungroup", {
+        await command(apiHost, apiPort, "shape:ungroup", {
             shapeIdArray: [groupId],
         });
         return response.text("Deleted group of id: " + groupId);
@@ -735,7 +741,7 @@ server.tool("set_link", "Set a link from a shape to a URL or a page in Frame0.",
         .describe("ID of the page to set. Required if linkType is 'page'."),
 }, async ({ shapeId, linkType, url, pageId }) => {
     try {
-        await command(apiPort, "shape:set-link", {
+        await command(apiHost, apiPort, "shape:set-link", {
             shapeId,
             linkProps: trimObject({
                 linkType,
@@ -759,10 +765,10 @@ server.tool("export_shape_as_image", "Export shape as image in Frame0.", {
         .describe("Image format to export."),
 }, async ({ shapeId, format }) => {
     try {
-        const data = await command(apiPort, "shape:get-shape", {
+        const data = await command(apiHost, apiPort, "shape:get-shape", {
             shapeId,
         });
-        const image = await command(apiPort, "file:export-image", {
+        const image = await command(apiHost, apiPort, "file:export-image", {
             pageId: data.pageId,
             shapeIdArray: [shapeId],
             format,
@@ -779,7 +785,7 @@ server.tool("add_page", "Add a new page in Frame0. The added page becomes the cu
     name: z.string().describe("Name of the page to add."),
 }, async ({ name }) => {
     try {
-        const pageData = await command(apiPort, "page:add", {
+        const pageData = await command(apiHost, apiPort, "page:add", {
             pageProps: trimObject({ name }),
         });
         return response.text(`Added page: ${JSON.stringify(pageData)}`);
@@ -794,11 +800,11 @@ server.tool("update_page", "Update a page in Frame0.", {
     name: z.string().describe("Name of the page."),
 }, async ({ pageId, name }) => {
     try {
-        const updatedPageId = await command(apiPort, "page:update", {
+        const updatedPageId = await command(apiHost, apiPort, "page:update", {
             pageId,
             pageProps: trimObject({ name }),
         });
-        const pageData = await command(apiPort, "page:get", {
+        const pageData = await command(apiHost, apiPort, "page:get", {
             pageId: updatedPageId,
         });
         return response.text(`Updated page: ${JSON.stringify(pageData)}`);
@@ -813,11 +819,11 @@ server.tool("duplicate_page", "Duplicate a page in Frame0.", {
     name: z.string().optional().describe("Name of the duplicated page."),
 }, async ({ pageId, name }) => {
     try {
-        const duplicatedPageId = await command(apiPort, "page:duplicate", {
+        const duplicatedPageId = await command(apiHost, apiPort, "page:duplicate", {
             pageId,
             pageProps: trimObject({ name }),
         });
-        const pageData = await command(apiPort, "page:get", {
+        const pageData = await command(apiHost, apiPort, "page:get", {
             pageId: duplicatedPageId,
             exportShapes: true,
         });
@@ -832,7 +838,7 @@ server.tool("delete_page", "Delete a page in Frame0.", {
     pageId: z.string().describe("ID of the page to delete"),
 }, async ({ pageId }) => {
     try {
-        await command(apiPort, "page:delete", {
+        await command(apiHost, apiPort, "page:delete", {
             pageId,
         });
         return response.text(`Deleted page ID is${pageId}`);
@@ -844,7 +850,7 @@ server.tool("delete_page", "Delete a page in Frame0.", {
 });
 server.tool("get_current_page_id", "Get ID of the current page in Frame0.", {}, async () => {
     try {
-        const pageId = await command(apiPort, "page:get-current-page");
+        const pageId = await command(apiHost, apiPort, "page:get-current-page");
         return response.text(`Current page ID is ${pageId},`);
     }
     catch (error) {
@@ -856,7 +862,7 @@ server.tool("set_current_page_by_id", "Set current page by ID in Frame0.", {
     pageId: z.string().describe("ID of the page to set as current page."),
 }, async ({ pageId }) => {
     try {
-        await command(apiPort, "page:set-current-page", {
+        await command(apiHost, apiPort, "page:set-current-page", {
             pageId,
         });
         return response.text(`Current page ID is ${pageId}`);
@@ -878,7 +884,7 @@ server.tool("get_page", "Get page data in Frame0.", {
         .describe("Export shapes data included in the page."),
 }, async ({ pageId, exportShapes }) => {
     try {
-        const pageData = await command(apiPort, "page:get", {
+        const pageData = await command(apiHost, apiPort, "page:get", {
             pageId,
             exportShapes,
         });
@@ -897,7 +903,7 @@ server.tool("get_all_pages", "Get all pages data in Frame0.", {
         .describe("Export shapes data included in the page data."),
 }, async ({ exportShapes }) => {
     try {
-        const docData = await command(apiPort, "doc:get", {
+        const docData = await command(apiHost, apiPort, "doc:get", {
             exportPages: true,
             exportShapes,
         });
@@ -923,7 +929,7 @@ server.tool("export_page_as_image", "Export page as image in Frame0.", {
         .describe("Image format to export."),
 }, async ({ pageId, format }) => {
     try {
-        const image = await command(apiPort, "file:export-image", {
+        const image = await command(apiHost, apiPort, "file:export-image", {
             pageId,
             format,
             fillBackground: true,

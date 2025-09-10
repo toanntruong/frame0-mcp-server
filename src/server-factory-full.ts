@@ -1,6 +1,4 @@
-#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import * as response from "./response.js";
 import { JsonRpcErrorCode } from "./response.js";
@@ -17,38 +15,12 @@ import packageJson from "../package.json" with { type: "json" };
 const NAME = "frame0-mcp-server";
 const VERSION = packageJson.version;
 
-// host and port for the Frame0's API server
-let apiHost: string = "localhost";
-let apiPort: number = 58320;
-
-// command line argument parsing
-const args = process.argv.slice(2);
-const apiHostArg = args.find((arg) => arg.startsWith("--host="));
-const apiPortArg = args.find((arg) => arg.startsWith("--api-port="));
-
-if (apiHostArg) {
-  const host = apiHostArg.split("=")[1];
-  apiHost = host || "localhost";
-}
-
-if (apiPortArg) {
-  const port = apiPortArg.split("=")[1];
-  try {
-    apiPort = parseInt(port, 10);
-    if (isNaN(apiPort) || apiPort < 0 || apiPort > 65535) {
-      throw new Error(`Invalid port number: ${port}`);
-    }
-  } catch (error) {
-    console.error(`Invalid port number: ${port}`);
-    process.exit(1);
-  }
-}
-
-// Create an MCP server
-const server = new McpServer({
-  name: NAME,
-  version: VERSION,
-});
+export function createFrame0Server(apiHost: string, apiPort: number): McpServer {
+  // Create an MCP server
+  const server = new McpServer({
+    name: NAME,
+    version: VERSION,
+  });
 
 server.tool(
   "create_frame",
@@ -1316,13 +1288,5 @@ server.tool(
   }
 );
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Frame0 MCP Server running on stdio");
+  return server;
 }
-
-main().catch((error) => {
-  console.error("Error starting server:", error);
-  process.exit(1);
-});

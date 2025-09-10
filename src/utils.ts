@@ -1,7 +1,5 @@
 import fetch from "node-fetch";
 
-const URL = "http://localhost";
-
 export const ARROWHEADS = [
   "none",
   "arrow",
@@ -32,8 +30,8 @@ type CommandResponse = {
   error?: string;
 };
 
-export async function command(port: number, command: string, args: any = {}) {
-  const res = await fetch(`${URL}:${port}/execute_command`, {
+export async function command(host: string, port: number, command: string, args: any = {}) {
+  const res = await fetch(`http://${host}:${port}/execute_command`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
